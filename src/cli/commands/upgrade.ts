@@ -9,8 +9,8 @@ import {
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-export const RELEASE_URL = 'https://gitkod.com/release';
-export const VERSION_API_URL = 'https://api.gitkod.com/prod/version/core';
+export const RELEASE_URL = 'https://itskod.com/release';
+export const VERSION_API_URL = 'https://api.itskod.com/prod/version/core';
 
 export interface VersionResponse {
   version: string;

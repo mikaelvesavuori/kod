@@ -80,4 +80,4 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          curl -X POST https://api.gitkod.com/prod/version/core?version=${VERSION} -H "Authorization: ${{ secrets.KOD_BACKOFFICE_API_KEY }}"
+          curl -X POST https://api.itskod.com/prod/version/core?version=${VERSION} -H "Authorization: ${{ secrets.KOD_BACKOFFICE_API_KEY }}"

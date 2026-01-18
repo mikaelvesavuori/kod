@@ -13,7 +13,7 @@ Minimalist Git repository management with workflow automation. A self-hosted, ze
 ## Installation
 
 ```bash
-curl -fsSL https://gitkod.com/release/latest.zip -o kod.zip && unzip kod.zip && chmod +x kod/kod.js && sudo mv kod/kod.js /usr/local/bin/kod && rm -rf kod kod.zip
+curl -fsSL https://itskod.com/release/latest.zip -o kod.zip && unzip kod.zip && chmod +x kod/kod.js && sudo mv kod/kod.js /usr/local/bin/kod && rm -rf kod kod.zip
 ```
 
 ## Upgrade
@@ -27,7 +27,7 @@ kod upgrade
 Or using the standalone script (useful if `kod` is broken):
 
 ```bash
-curl -fsSL https://gitkod.com/release/upgrade.sh | bash
+curl -fsSL https://itskod.com/release/upgrade.sh | bash
 ```
 
 On a VM with Kod installed via the install script:

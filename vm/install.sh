@@ -133,7 +133,7 @@ chown -R kod:kod /home/kod/.kod
 
 # Install Kod
 echo "Installing Kod..."
-curl -fsSL https://gitkod.com/release/latest.zip -o /tmp/kod.zip
+curl -fsSL https://itskod.com/release/latest.zip -o /tmp/kod.zip
 unzip -o /tmp/kod.zip -d /tmp/
 mv /tmp/kod/kod.js /home/kod/.local/bin/kod || {
     mkdir -p /home/kod/.local/bin
@@ -220,7 +220,7 @@ print_info() { echo -e "${YELLOW}$1${NC}"; }
 BIN_DIR="/home/kod/.local/bin"
 INSTALL_DIR="/home/kod/.kod"
 VERSION_FILE="$INSTALL_DIR/VERSION"
-RELEASE_URL="https://gitkod.com/release"
+RELEASE_URL="https://itskod.com/release"
 
 print_info "Kod Upgrade Tool"
 echo ""
@@ -234,7 +234,7 @@ fi
 
 # Check latest version
 print_info "Checking for latest version..."
-VERSION_JSON=$(curl -sSL "https://api.gitkod.com/prod/version/core" 2>/dev/null || echo "")
+VERSION_JSON=$(curl -sSL "https://api.itskod.com/prod/version/core" 2>/dev/null || echo "")
 LATEST_VERSION=""
 if [ -n "$VERSION_JSON" ]; then
     LATEST_VERSION=$(echo "$VERSION_JSON" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/' 2>/dev/null || echo "")
