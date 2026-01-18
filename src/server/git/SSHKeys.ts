@@ -91,6 +91,11 @@ export class SshKeyManager {
 
   /**
    * Install the kod-shell script that handles Git commands.
+   * @todo Running "kod serve" with a vanilla/default config breaks with
+   * """
+   * Failed to load table kod-shell: SyntaxError: Unexpected token '#', "#!/bin/sh
+   * "... is not valid JSON
+   * """
    */
   installShell(): void {
     const shellContent = `#!/bin/sh
