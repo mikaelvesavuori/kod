@@ -1,0 +1,20 @@
+coverage/
+node_modules/
+dist/
+lib/
+.DS_Store
+package-lock.json
+.claude/
+
+# Generated files and folders
+kod/
+kod_*.zip
+sbom.json
+oss-licenses.txt
+/*.js
+/*.mjs
+
+# Make sure that esbuild config is included
+!esbuild*.mjs
+
+*.tgz

@@ -1,0 +1,89 @@
+Kod Commercial Software License
+
+Copyright (c) 2026-present Mikael Vesavuori
+
+PROPRIETARY SOFTWARE - NOT OPEN SOURCE
+
+This software is proprietary and confidential. Unauthorized copying, modification,
+distribution, or use is strictly prohibited.
+
+================================================================================
+IMPORTANT NOTICE
+================================================================================
+
+This LICENSE file is a SUMMARY ONLY and does not constitute the complete legal
+agreement. The full Software License Agreement available at:
+
+    https://gitkod.com/agreement
+
+governs your use of this software and supersedes any conflicting terms in this
+file. By using this software, you agree to be bound by the complete agreement.
+
+================================================================================
+LICENSE GRANTS
+================================================================================
+
+Subject to compliance with the full agreement at <https://gitkod.com/agreement>,
+licensed users are granted the following rights:
+
+FREE LICENSE (Individual/Non-Commercial Use):
+
+- Natural persons may use this software for personal, educational, or other
+    non-commercial purposes
+- "Personal use" means use by an individual not acting on behalf of any
+    organization and not for commercial benefit
+
+COMMERCIAL LICENSE (Organizational/Commercial Use):
+
+- Organizations and commercial users must purchase a valid license
+- Trial periods up to 30 days are permitted for evaluation purposes
+- Licenses grant perpetual use of the major version purchased, including
+    all minor and patch updates to that major version
+- Upgrades to new major versions require purchase of a new license
+
+Licensed users may:
+
+- Install and use the software on their own infrastructure
+- Use the software according to their license tier and entitlements
+
+================================================================================
+RESTRICTIONS
+================================================================================
+
+You may NOT, without express written permission:
+
+- Reverse engineer, decompile, or disassemble this software
+- Distribute, sublicense, sell, lease, or transfer this software
+- Remove, obscure, or modify any copyright, trademark, or license notices
+- Use this software to provide hosted services or SaaS offerings to third parties
+- Use this software for the primary purpose of developing competing products
+- Exceed the scope or usage limits defined in your license tier
+
+================================================================================
+WARRANTY DISCLAIMER
+================================================================================
+
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. THE ENTIRE RISK AS
+TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH YOU.
+
+================================================================================
+LIMITATION OF LIABILITY
+================================================================================
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+CONTACT & LICENSING
+================================================================================
+
+For full terms and conditions:  <https://gitkod.com/agreement>
+For licensing inquiries:         <contact@gitkod.com>
+For general information:         <https://gitkod.com>

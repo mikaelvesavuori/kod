@@ -1,0 +1,71 @@
+{
+  "name": "kod",
+  "description": "Minimalist Git repository management with workflow automation",
+  "version": "0.0.1",
+  "author": "Kod",
+  "license": "COMMERCIAL",
+  "keywords": [
+    "git",
+    "workflow",
+    "ci",
+    "automation"
+  ],
+  "type": "module",
+  "main": "dist/kod.mjs",
+  "bin": {
+    "kod": "dist/kod.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikaelvesavuori/kod"
+  },
+  "bugs": {
+    "url": "https://github.com/mikaelvesavuori/kod/issues"
+  },
+  "homepage": "https://github.com/mikaelvesavuori/kod",
+  "files": [
+    "/dist",
+    "!/dist/**/*.map",
+    "!/tests",
+    "VERSION",
+    "LICENSE",
+    "README.md",
+    "sbom.json",
+    "oss-licenses.txt"
+  ],
+  "scripts": {
+    "start": "node dist/kod.mjs",
+    "serve": "node dist/kod.mjs serve",
+    "build": "npm run clean && node esbuild.config.mjs",
+    "dev": "npx tsx src/cli/index.ts",
+    "test": "npx vitest run",
+    "test:watch": "npx vitest",
+    "typecheck": "tsc --noEmit",
+    "docs": "npm run docs:licenses",
+    "docs:licenses": "npx license-checker-rseidelsohn --production --plainVertical --excludePackagesStartingWith \"molnos;esbuild;@esbuild\" --out oss-licenses.txt",
+    "sbom": "syft file:package-lock.json --output spdx-json > ./sbom.json",
+    "scan": "grype ./sbom.json -o json",
+    "licenses": "grant check sbom.json --config .grant.yaml",
+    "release": "bash release.sh",
+    "clean": "rm -rf lib && rm -rf dist && mkdir lib",
+    "lint": "npx @biomejs/biome check --write src/",
+    "package": "npm pack",
+    "prepublishOnly": "npm run build && echo $npm_package_version > VERSION && npm run sbom && npm run docs:licenses && cp README_PUBLIC.md README.md",
+    "postpublish": "git checkout README.md && rm -f VERSION sbom.json oss-licenses.txt",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2",
+    "@types/node": "latest",
+    "@vitest/coverage-v8": "4",
+    "esbuild": "latest",
+    "husky": "9",
+    "license-checker-rseidelsohn": "4",
+    "tsx": "4",
+    "typescript": "5",
+    "vitest": "4"
+  },
+  "dependencies": {
+    "pikodb": "1"
+  }
+}
