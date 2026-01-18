@@ -5,7 +5,7 @@ import type {
   TriggerWorkflowRequest
 } from '../../shared/types.js';
 
-import type { Database } from '../../db/index.js';
+import type { Database } from '../db/index.js';
 import type { WorkflowQueue } from '../workflow/WorkflowQueue.js';
 import { hasPermission, getTokenId, FORBIDDEN } from '../auth.js';
 

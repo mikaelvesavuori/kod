@@ -1,7 +1,7 @@
 import type { Route, ServerConfig } from '../shared/types.js';
 
 import { createHttpServer } from './http-server.js';
-import { Database } from '../db/index.js';
+import { Database } from './db/index.js';
 import { RepoManager } from './git/RepoManager.js';
 import { WorkflowQueue } from './workflow/WorkflowQueue.js';
 import { SshKeyManager } from './git/SSHKeys.js';

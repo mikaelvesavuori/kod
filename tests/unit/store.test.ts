@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { Store } from '../../src/db/Store.js';
+import { Store } from '../../src/server/db/Store.js';
 
 describe('Store', () => {
   let store: Store;

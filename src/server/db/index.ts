@@ -1,11 +1,11 @@
-import { hashToken } from '../shared/crypto.js';
+import { hashToken } from '../../shared/crypto.js';
 import type {
   Repo,
   Collaborator,
   RepoCollaborators,
   WorkflowRun,
   ApiToken
-} from '../shared/types.js';
+} from '../../shared/types.js';
 
 import { Store } from './Store.js';
 
@@ -131,7 +131,7 @@ export class Database {
     if (!existing) return;
 
     existing.collaborators = existing.collaborators.filter(
-      (c) => c !== username
+      (c: any) => c !== username
     );
     await this.store.write(REPO_COLLABORATORS_TABLE, repoName, existing);
   }

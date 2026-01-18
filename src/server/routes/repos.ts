@@ -7,7 +7,7 @@ import type {
   Repo
 } from '../../shared/types.js';
 
-import type { Database } from '../../db/index.js';
+import type { Database } from '../db/index.js';
 import type { RepoManager } from '../git/RepoManager.js';
 import { installPostReceiveHook } from '../git/hooks.js';
 import { hasPermission, getTokenId, FORBIDDEN } from '../auth.js';

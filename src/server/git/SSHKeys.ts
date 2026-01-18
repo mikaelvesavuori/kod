@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 
-import type { Database } from '../../db/index.js';
+import type { Database } from '../db/index.js';
 
 /**
  * Manages SSH authorized_keys for Git access.

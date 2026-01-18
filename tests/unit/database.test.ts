@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { Database } from '../../src/db/index.js';
+import { Database } from '../../src/server/db/index.js';
 
 describe('Database', () => {
   let db: Database;

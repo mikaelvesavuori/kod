@@ -1,9 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 
-import {
-  generateApiToken,
-  loadClientConfig
-} from '../../src/shared/config.js';
+import { generateApiToken, loadClientConfig } from '../../src/shared/config.js';
 
 describe('Config', () => {
   describe('generateApiToken', () => {

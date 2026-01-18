@@ -5,7 +5,7 @@ import type {
   TokenPermission
 } from '../../shared/types.js';
 
-import type { Database } from '../../db/index.js';
+import type { Database } from '../db/index.js';
 import type { HttpRequestWithAuth } from '../http-server.js';
 
 export function createTokenRoutes(db: Database): Route[] {

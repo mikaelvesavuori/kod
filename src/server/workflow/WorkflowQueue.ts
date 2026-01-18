@@ -11,7 +11,7 @@ import type {
 
 import { exec } from '../../shared/exec.js';
 import { runWorkflowFiles, discoverWorkflows } from './runner.js';
-import type { Database } from '../../db/index.js';
+import type { Database } from '../db/index.js';
 
 interface QueuedWorkflow {
   id: string;

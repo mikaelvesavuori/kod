@@ -6,7 +6,7 @@ import type {
   Collaborator
 } from '../../shared/types.js';
 
-import type { Database } from '../../db/index.js';
+import type { Database } from '../db/index.js';
 import type { SshKeyManager } from '../git/SSHKeys.js';
 import { hasPermission, getTokenId, FORBIDDEN } from '../auth.js';
 
