@@ -62,6 +62,14 @@ git clone http://localhost:3000/repos/my-project.git
 
 ## CLI Reference
 
+### Clone
+
+```bash
+kod clone <repo>                       # Clone a repository
+```
+
+The clone command accepts only the repository name (not a full URL). It uses your configured server URL and API token to authenticate automatically.
+
 ### Repository Commands
 
 ```bash

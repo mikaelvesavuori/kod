@@ -132,6 +132,14 @@ kod serve [options]                   # Start the Kod server
   --token <token>                     # API token
 ```
 
+### Clone
+
+```bash
+kod clone <repo>                      # Clone a repository
+```
+
+The clone command accepts only the repository name (not a full URL). It uses your configured server URL and API token to authenticate automatically.
+
 ### Repository Management
 
 ```bash

@@ -26,6 +26,7 @@ import {
   parseUsername
 } from './commands/token.js';
 import { upgradeCommand } from './commands/upgrade.js';
+import { cloneRepo, parseCloneArgs } from './commands/clone.js';
 import { setConfigOverrides } from './http-client.js';
 
 const VERSION = '0.0.1';
@@ -111,6 +112,12 @@ async function main(): Promise<void> {
       case 'upgrade':
         await upgradeCommand();
         break;
+
+      case 'clone': {
+        const { repoUrl, options } = parseCloneArgs(commandArgs);
+        await cloneRepo(repoUrl, options);
+        break;
+      }
 
       default:
         console.error(`Unknown command: ${command}`);
@@ -348,6 +355,7 @@ Usage: kod [global options] <command> [options]
 Commands:
   init                           Configure Kod (server URL, API token)
   serve                          Start the Kod server
+  clone <url|name> [options]     Clone a repository (uses configured token)
   upgrade                        Upgrade Kod to the latest version
 
   repo list                      List all repositories
@@ -378,6 +386,9 @@ Token Options:
   --expires <days>               Token expiration in days (1-365)
   --username <user>              Link token to collaborator (for Git access)
 
+Clone Options:
+  -c, --credentials <token>      Override token for git authentication
+
 Permissions: repo:read, repo:write, repo:delete, collaborator:read,
              collaborator:write, workflow:read, workflow:trigger, admin
 
@@ -394,6 +405,9 @@ Examples:
   KOD_API_TOKEN=kod_abc123 kod repo list
   kod repo create my-app
   kod repo my-app collaborator add alice
+  kod clone my-app
+  kod clone http://localhost:3000/repos/my-app.git
+  kod clone my-app --credentials kod_abc123
   kod token create ci-deploy --permissions repo:read,workflow:trigger
   kod token create alice-token --username alice --permissions repo:read,repo:write
   kod token create temp-token --expires 30

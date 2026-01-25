@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: OK */
 import type { Repo } from '../../shared/types.js';
-import { loadClientConfig } from '../../shared/config.js';
 
 import { api } from '../http-client.js';
+import { buildRepoUrl } from './clone.js';
 
 interface RepoInfo extends Repo {
   collaborators: string[];
@@ -49,18 +49,14 @@ export async function createRepo(name: string): Promise<void> {
   }
 
   const repo = response.data!;
-  const config = loadClientConfig();
-
-  // Parse server URL to build clone URL
-  const serverHost = new URL(config.serverUrl).hostname;
 
   console.log(`Repository '${repo.name}' created successfully.`);
   console.log();
   console.log('Clone with:');
-  console.log(`  git clone git@${serverHost}:${repo.name}.git`);
+  console.log(`  kod clone ${repo.name}`);
   console.log();
   console.log('Or add as remote:');
-  console.log(`  git remote add origin git@${serverHost}:${repo.name}.git`);
+  console.log(`  git remote add origin ${buildRepoUrl(repo.name)}`);
 }
 
 export async function getRepoInfo(name: string): Promise<void> {
@@ -78,15 +74,13 @@ export async function getRepoInfo(name: string): Promise<void> {
   }
 
   const repo = response.data!;
-  const config = loadClientConfig();
-  const serverHost = new URL(config.serverUrl).hostname;
 
   console.log(`Repository: ${repo.name}`);
   console.log(`Created: ${new Date(repo.createdAt).toLocaleString()}`);
   console.log(`Default branch: ${repo.defaultBranch || '(none)'}`);
   console.log();
   console.log('Clone URL:');
-  console.log(`  git@${serverHost}:${repo.name}.git`);
+  console.log(`  ${buildRepoUrl(repo.name)}`);
   console.log();
 
   if (repo.branches.length > 0) {
@@ -135,7 +129,7 @@ export async function updateRepo(
   console.log(`Repository renamed from '${name}' to '${value}'.`);
   console.log();
   console.log('Remember to update your remote URL:');
-  console.log(`  git remote set-url origin git@<server>:${value}.git`);
+  console.log(`  git remote set-url origin ${buildRepoUrl(value)}`);
 }
 
 export async function deleteRepo(name: string): Promise<void> {
