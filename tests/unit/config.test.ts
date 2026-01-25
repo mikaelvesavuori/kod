@@ -21,7 +21,6 @@ import { generateApiToken, loadClientConfig } from '../../src/shared/config.js';
 
 const CONFIG_DIR = join(homedir(), '.kod');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
-const _BACKUP_FILE = join(CONFIG_DIR, 'config.json.test-backup');
 
 describe('Config', () => {
   // Backup and restore config file to avoid test pollution from user's real config
