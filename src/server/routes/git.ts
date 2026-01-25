@@ -17,7 +17,10 @@ import type { HttpRequestWithAuth } from '../http-server.js';
  * - Token must have repo:write for push
  * - If token has a username, user must be a collaborator on the repo
  */
-export function createGitRoutes(db: Database, repoManager: RepoManager): Route[] {
+export function createGitRoutes(
+  db: Database,
+  repoManager: RepoManager
+): Route[] {
   return [
     gitInfoRefs(db, repoManager),
     gitUploadPack(db, repoManager),
@@ -66,7 +69,9 @@ async function checkRepoAccess(
   // If token is linked to a username, check collaborator access
   if (tokenInfo.username) {
     const repoCollabs = await db.getRepoCollaborators(repoName);
-    const isCollaborator = repoCollabs?.collaborators.includes(tokenInfo.username);
+    const isCollaborator = repoCollabs?.collaborators.includes(
+      tokenInfo.username
+    );
     const isOwner = repo.ownerTokenId === tokenInfo.id;
 
     if (!isCollaborator && !isOwner) {
@@ -81,11 +86,17 @@ async function checkRepoAccess(
 const gitInfoRefs = (db: Database, repoManager: RepoManager): Route => ({
   method: 'GET',
   pattern: /^\/repos\/(?<name>[^/]+)\.git\/info\/refs$/,
-  handler: async (req: HttpRequest, params: Record<string, string>): Promise<HttpResponse> => {
+  handler: async (
+    req: HttpRequest,
+    params: Record<string, string>
+  ): Promise<HttpResponse> => {
     const url = new URL(req.rawUrl || req.url, 'http://localhost');
     const service = url.searchParams.get('service');
 
-    if (!service || !['git-upload-pack', 'git-receive-pack'].includes(service)) {
+    if (
+      !service ||
+      !['git-upload-pack', 'git-receive-pack'].includes(service)
+    ) {
       return { status: 400, body: { error: 'Invalid service' } };
     }
 
@@ -98,7 +109,11 @@ const gitInfoRefs = (db: Database, repoManager: RepoManager): Route => ({
     const repoPath = repoManager.getRepoPath(params.name);
 
     return new Promise((resolve) => {
-      const proc = spawn(service, ['--stateless-rpc', '--advertise-refs', repoPath]);
+      const proc = spawn(service, [
+        '--stateless-rpc',
+        '--advertise-refs',
+        repoPath
+      ]);
 
       const chunks: Buffer[] = [];
       proc.stdout.on('data', (data) => chunks.push(data));
@@ -113,7 +128,7 @@ const gitInfoRefs = (db: Database, repoManager: RepoManager): Route => ({
         // Git smart protocol header
         const header = `# service=${service}\n`;
         const headerPkt = `${(header.length + 4).toString(16).padStart(4, '0')}${header}`;
-        const body = Buffer.concat([Buffer.from(headerPkt + '0000'), output]);
+        const body = Buffer.concat([Buffer.from(`${headerPkt}0000`), output]);
 
         resolve({
           status: 200,
@@ -126,7 +141,10 @@ const gitInfoRefs = (db: Database, repoManager: RepoManager): Route => ({
       });
 
       proc.on('error', () => {
-        resolve({ status: 500, body: { error: 'Failed to spawn git process' } });
+        resolve({
+          status: 500,
+          body: { error: 'Failed to spawn git process' }
+        });
       });
     });
   }
@@ -136,7 +154,10 @@ const gitInfoRefs = (db: Database, repoManager: RepoManager): Route => ({
 const gitUploadPack = (db: Database, repoManager: RepoManager): Route => ({
   method: 'POST',
   pattern: /^\/repos\/(?<name>[^/]+)\.git\/git-upload-pack$/,
-  handler: async (req: HttpRequest, params: Record<string, string>): Promise<HttpResponse> => {
+  handler: async (
+    req: HttpRequest,
+    params: Record<string, string>
+  ): Promise<HttpResponse> => {
     const access = await checkRepoAccess(req, db, params.name, false);
     if (!access.allowed) {
       return { status: 403, body: { error: access.error } };
@@ -151,7 +172,10 @@ const gitUploadPack = (db: Database, repoManager: RepoManager): Route => ({
 const gitReceivePack = (db: Database, repoManager: RepoManager): Route => ({
   method: 'POST',
   pattern: /^\/repos\/(?<name>[^/]+)\.git\/git-receive-pack$/,
-  handler: async (req: HttpRequest, params: Record<string, string>): Promise<HttpResponse> => {
+  handler: async (
+    req: HttpRequest,
+    params: Record<string, string>
+  ): Promise<HttpResponse> => {
     const access = await checkRepoAccess(req, db, params.name, true);
     if (!access.allowed) {
       return { status: 403, body: { error: access.error } };

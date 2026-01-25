@@ -96,7 +96,9 @@ export async function startServer(config: ServerConfig): Promise<void> {
     const currentTokens = await db.listApiTokens();
     if (currentTokens.length === 0) {
       console.log(`  Auth: No tokens configured`);
-      console.log(`  Set KOD_ADMIN_TOKEN env var and restart to create an admin token`);
+      console.log(
+        `  Set KOD_ADMIN_TOKEN env var and restart to create an admin token`
+      );
     } else {
       console.log(`  Auth: ${currentTokens.length} API token(s) configured`);
     }

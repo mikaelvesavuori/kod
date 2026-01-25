@@ -28,7 +28,9 @@ export async function cloneRepo(
 
   if (!token) {
     console.error('Error: No credentials available');
-    console.error('Either configure a token with "kod init" or use --credentials <token>');
+    console.error(
+      'Either configure a token with "kod init" or use --credentials <token>'
+    );
     process.exit(1);
   }
 

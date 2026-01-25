@@ -1,9 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 
-import {
-  setConfigOverrides,
-  apiRequest
-} from '../../src/cli/http-client.js';
+import { setConfigOverrides, apiRequest } from '../../src/cli/http-client.js';
 
 describe('CLI', () => {
   describe('setConfigOverrides', () => {

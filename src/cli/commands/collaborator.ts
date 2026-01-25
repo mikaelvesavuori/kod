@@ -23,7 +23,9 @@ export async function addCollaborator(
   }
 
   console.log(`Collaborator '${username}' added to '${repoName}'.`);
-  console.log(`Create a token for this user: kod token create ${username}-token --username ${username}`);
+  console.log(
+    `Create a token for this user: kod token create ${username}-token --username ${username}`
+  );
 }
 
 export async function removeCollaborator(

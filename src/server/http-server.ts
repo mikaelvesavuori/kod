@@ -53,7 +53,9 @@ export function createHttpServer(
     if (isInternalEndpoint) {
       const remoteAddr = req.socket.remoteAddress;
       if (!isLocalhost(remoteAddr)) {
-        sendResponse(res, 403, { error: 'Internal endpoints are localhost-only' });
+        sendResponse(res, 403, {
+          error: 'Internal endpoints are localhost-only'
+        });
         return;
       }
     }
