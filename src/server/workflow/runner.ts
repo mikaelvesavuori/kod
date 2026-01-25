@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type {
@@ -172,11 +172,10 @@ export function discoverWorkflows(repoWorkingDir: string): string[] {
   }
 
   try {
-    const { readdirSync } = require('node:fs');
-    const files = readdirSync(workflowDir) as string[];
+    const files = readdirSync(workflowDir);
     return files
-      .filter((f: string) => f.endsWith('.toml'))
-      .map((f: string) => join(workflowDir, f));
+      .filter((f) => f.endsWith('.toml'))
+      .map((f) => join(workflowDir, f));
   } catch {
     return [];
   }

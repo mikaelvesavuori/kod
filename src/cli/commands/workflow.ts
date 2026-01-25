@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: OK */
+import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -214,7 +215,6 @@ async function getGitBranch(): Promise<string | null> {
 function getRepoName(): string {
   // Try to get repo name from git remote
   try {
-    const { execSync } = require('node:child_process');
     const remote = execSync('git remote get-url origin 2>/dev/null', {
       encoding: 'utf-8'
     });
