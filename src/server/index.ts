@@ -4,12 +4,12 @@ import { createHttpServer } from './http-server.js';
 import { Database } from './db/index.js';
 import { RepoManager } from './git/RepoManager.js';
 import { WorkflowQueue } from './workflow/WorkflowQueue.js';
-import { SshKeyManager } from './git/SSHKeys.js';
 
 import { createRepoRoutes } from './routes/repos.js';
 import { createCollaboratorRoutes } from './routes/collaborators.js';
 import { createWorkflowRoutes } from './routes/workflows.js';
 import { createTokenRoutes } from './routes/tokens.js';
+import { createGitRoutes } from './routes/git.js';
 
 export async function startServer(config: ServerConfig): Promise<void> {
   console.log('Starting Kod server...');
@@ -22,12 +22,6 @@ export async function startServer(config: ServerConfig): Promise<void> {
 
   // Initialize workflow queue
   const queue = new WorkflowQueue(db, config.reposDir);
-
-  // Initialize SSH key manager
-  const sshKeyManager = new SshKeyManager(config.dataDir, config.reposDir);
-  sshKeyManager.installShell();
-  // Regenerate authorized_keys on startup to ensure sync
-  await sshKeyManager.regenerateAuthorizedKeys(db);
 
   // Build server URL for hooks
   const serverUrl = `http://localhost:${config.port}`;
@@ -58,9 +52,10 @@ export async function startServer(config: ServerConfig): Promise<void> {
       }
     },
     ...createRepoRoutes(db, repoManager, serverUrl),
-    ...createCollaboratorRoutes(db, sshKeyManager),
+    ...createCollaboratorRoutes(db),
     ...createWorkflowRoutes(db, queue),
-    ...createTokenRoutes(db)
+    ...createTokenRoutes(db),
+    ...createGitRoutes(db, repoManager)
   ];
 
   // Token validator using database
@@ -80,6 +75,17 @@ export async function startServer(config: ServerConfig): Promise<void> {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
+  // Bootstrap: create admin token if none exist and KOD_ADMIN_TOKEN is set
+  const tokens = await db.listApiTokens();
+  if (tokens.length === 0) {
+    const adminToken = process.env.KOD_ADMIN_TOKEN;
+    if (adminToken) {
+      // Create admin token with the provided value
+      await db.createAdminToken(adminToken);
+      console.log('Created admin token from KOD_ADMIN_TOKEN');
+    }
+  }
+
   // Start listening
   server.listen(config.port, async () => {
     console.log(`Kod server running on http://localhost:${config.port}`);
@@ -87,12 +93,12 @@ export async function startServer(config: ServerConfig): Promise<void> {
     console.log(`  Repos dir: ${config.reposDir}`);
 
     // Check if any tokens exist
-    const tokens = await db.listApiTokens();
-    if (tokens.length === 0) {
+    const currentTokens = await db.listApiTokens();
+    if (currentTokens.length === 0) {
       console.log(`  Auth: No tokens configured`);
-      console.log(`  Run 'kod token create' to create an API token`);
+      console.log(`  Set KOD_ADMIN_TOKEN env var and restart to create an admin token`);
     } else {
-      console.log(`  Auth: ${tokens.length} API token(s) configured`);
+      console.log(`  Auth: ${currentTokens.length} API token(s) configured`);
     }
   });
 }

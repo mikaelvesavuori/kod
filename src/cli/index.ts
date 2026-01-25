@@ -22,7 +22,8 @@ import {
   createToken,
   deleteToken,
   parsePermissions,
-  parseExpiration
+  parseExpiration,
+  parseUsername
 } from './commands/token.js';
 import { upgradeCommand } from './commands/upgrade.js';
 import { setConfigOverrides } from './http-client.js';
@@ -229,7 +230,7 @@ async function collaboratorSubcommand(
       break;
 
     case 'add':
-      await addCollaborator(repoName, args[1], args[2]);
+      await addCollaborator(repoName, args[1]);
       break;
 
     case 'remove':
@@ -255,6 +256,7 @@ Commands:
 Options for create:
   --permissions <perms>  Comma-separated permissions (default: repo:read,repo:write,workflow:read)
   --expires <days>       Token expiration in days (1-365, default: never)
+  --username <user>      Link token to a collaborator (for Git access)
 
 Valid permissions:
   repo:read, repo:write, repo:delete
@@ -268,6 +270,7 @@ Examples:
   kod token create admin-token --permissions admin
   kod token create deploy-token --permissions repo:read,workflow:trigger
   kod token create temp-token --expires 30
+  kod token create alice-token --username alice --permissions repo:read,repo:write
   kod token delete abc123`);
     return;
   }
@@ -287,7 +290,8 @@ Examples:
       }
       const permissions = parsePermissions(args);
       const expiresInDays = parseExpiration(args);
-      await createToken(name, permissions, expiresInDays);
+      const username = parseUsername(args);
+      await createToken(name, permissions, expiresInDays, username);
       break;
     }
 
@@ -353,7 +357,7 @@ Commands:
   repo delete <name>             Delete a repository
 
   repo <name> collaborator list                List collaborators
-  repo <name> collaborator add <user> [key]    Add collaborator with SSH key
+  repo <name> collaborator add <user>          Add collaborator
   repo <name> collaborator remove <user>       Remove collaborator
 
   token list                     List all API tokens (requires admin)
@@ -372,6 +376,7 @@ Global Options:
 Token Options:
   --permissions <perms>          Comma-separated permissions
   --expires <days>               Token expiration in days (1-365)
+  --username <user>              Link token to collaborator (for Git access)
 
 Permissions: repo:read, repo:write, repo:delete, collaborator:read,
              collaborator:write, workflow:read, workflow:trigger, admin
@@ -389,8 +394,8 @@ Examples:
   KOD_API_TOKEN=kod_abc123 kod repo list
   kod repo create my-app
   kod repo my-app collaborator add alice
-  kod repo my-app collaborator add bob ~/.ssh/bob.pub
   kod token create ci-deploy --permissions repo:read,workflow:trigger
+  kod token create alice-token --username alice --permissions repo:read,repo:write
   kod token create temp-token --expires 30
   kod workflow build.toml`);
 }

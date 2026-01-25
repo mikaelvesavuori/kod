@@ -53,7 +53,7 @@ export function createHttpServer(
     if (isInternalEndpoint) {
       const remoteAddr = req.socket.remoteAddress;
       if (!isLocalhost(remoteAddr)) {
-        sendJson(res, 403, { error: 'Internal endpoints are localhost-only' });
+        sendResponse(res, 403, { error: 'Internal endpoints are localhost-only' });
         return;
       }
     }
@@ -64,7 +64,8 @@ export function createHttpServer(
     if (!skipAuth) {
       const authResult = await validateAuth(httpReq, validateToken);
       if (!authResult.valid) {
-        sendJson(res, 401, { error: 'Unauthorized' });
+        res.setHeader('WWW-Authenticate', 'Basic realm="Kod"');
+        sendResponse(res, 401, { error: 'Unauthorized' });
         return;
       }
       // Attach token info to request for permission checking
@@ -89,16 +90,16 @@ export function createHttpServer(
 
       try {
         const response = await route.handler(httpReq, params);
-        sendJson(res, response.status, response.body, response.headers);
+        sendResponse(res, response.status, response.body, response.headers);
       } catch (err) {
         console.error('Route error:', err);
-        sendJson(res, 500, { error: 'Internal server error' });
+        sendResponse(res, 500, { error: 'Internal server error' });
       }
       return;
     }
 
     // No route matched
-    sendJson(res, 404, { error: 'Not found' });
+    sendResponse(res, 404, { error: 'Not found' });
   });
 
   return server;
@@ -106,16 +107,16 @@ export function createHttpServer(
 
 async function parseRequest(req: IncomingMessage): Promise<HttpRequest> {
   const body = await parseBody(req);
-  const url = new URL(
-    req.url || '/',
-    `http://${req.headers.host || 'localhost'}`
-  );
+  const rawUrl = req.url || '/';
+  const url = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
 
   return {
     method: req.method || 'GET',
     url: url.pathname,
     headers: req.headers as Record<string, string | string[] | undefined>,
-    body
+    body,
+    // Store raw URL for routes that need query params (e.g., git info/refs)
+    rawUrl
   };
 }
 
@@ -133,7 +134,20 @@ async function parseBody(req: IncomingMessage): Promise<unknown> {
         return;
       }
 
-      const raw = Buffer.concat(chunks).toString('utf-8');
+      const buffer = Buffer.concat(chunks);
+      const contentType = req.headers['content-type'] || '';
+
+      // Keep as Buffer for git protocol requests
+      if (
+        contentType.includes('application/x-git') ||
+        contentType.includes('git-upload-pack') ||
+        contentType.includes('git-receive-pack')
+      ) {
+        resolve(buffer);
+        return;
+      }
+
+      const raw = buffer.toString('utf-8');
 
       // Try to parse as JSON
       try {
@@ -163,9 +177,10 @@ async function validateAuth(
   validateToken: TokenValidator
 ): Promise<AuthResult> {
   const auth = req.headers.authorization;
-  if (!auth) return { valid: false };
+  if (!auth || typeof auth !== 'string') return { valid: false };
 
-  if (typeof auth === 'string' && auth.startsWith('Bearer ')) {
+  // Bearer token auth
+  if (auth.startsWith('Bearer ')) {
     const token = auth.slice(7);
     const tokenInfo = await validateToken(token);
 
@@ -174,28 +189,59 @@ async function validateAuth(
     }
   }
 
+  // HTTP Basic Auth (for git clients)
+  // Format: Basic base64(username:password)
+  // The password is the API token
+  if (auth.startsWith('Basic ')) {
+    try {
+      const base64 = auth.slice(6);
+      const decoded = Buffer.from(base64, 'base64').toString('utf-8');
+      const colonIndex = decoded.indexOf(':');
+
+      if (colonIndex > -1) {
+        // Password is the token
+        const token = decoded.slice(colonIndex + 1);
+        const tokenInfo = await validateToken(token);
+
+        if (tokenInfo) {
+          return { valid: true, tokenInfo };
+        }
+      }
+    } catch {
+      // Invalid base64
+    }
+  }
+
   return { valid: false };
 }
 
-function sendJson(
+function sendResponse(
   res: ServerResponse,
   status: number,
   body?: unknown,
   headers?: Record<string, string>
 ): void {
-  res.setHeader('Content-Type', 'application/json');
-
+  // Set custom headers first (may override Content-Type)
   if (headers) {
     for (const [key, value] of Object.entries(headers)) {
       res.setHeader(key, value);
     }
   }
 
+  // If no Content-Type set, default to JSON
+  if (!res.hasHeader('Content-Type')) {
+    res.setHeader('Content-Type', 'application/json');
+  }
+
   res.writeHead(status);
 
-  if (body !== undefined) {
-    res.end(JSON.stringify(body));
-  } else {
+  if (body === undefined) {
     res.end();
+  } else if (Buffer.isBuffer(body)) {
+    // Binary response (for git protocol)
+    res.end(body);
+  } else {
+    // JSON response
+    res.end(JSON.stringify(body));
   }
 }

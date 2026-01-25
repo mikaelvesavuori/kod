@@ -5,7 +5,8 @@ Minimalist Git repository management with workflow automation. A self-hosted, ze
 ## Features
 
 - **Repository management** - Create, rename, delete Git repos
-- **Collaborator management** - Add/remove users with SSH keys
+- **Collaborator management** - Add/remove users with token-based access control
+- **Git over HTTP** - Clone and push using API tokens
 - **Workflow automation** - Run TOML-defined workflows on push or locally
 - **Single binary** - One `kod` command for CLI and server
 - **Zero runtime dependencies** - Only requires Node.js 18+
@@ -38,20 +39,22 @@ sudo /usr/local/bin/kod-upgrade.sh
 
 ## Quick Start
 
-### 1. Initialize configuration
+### 1. Start the server
+
+Start the server with an admin token for first-time setup:
+
+```bash
+KOD_ADMIN_TOKEN=kod_your_secret_token kod serve
+```
+
+The server will create an admin token on first start if no tokens exist.
+
+### 2. Initialize configuration
 
 ```bash
 kod init
-```
-
-This creates `~/.kod/config.json` with your server URL and API token.
-
-### 2. Start the server
-
-```bash
-kod serve
-# Or with options
-kod serve --port 3000 --data-dir /var/kod/data --repos-dir /var/kod/repos
+# Enter server URL: http://localhost:3000
+# Enter token: kod_your_secret_token (the one you set above)
 ```
 
 ### 3. Create a repository
@@ -63,10 +66,43 @@ kod repo create my-app
 ### 4. Clone and push
 
 ```bash
-git clone git@your-server:my-app.git
+git clone http://localhost:3000/repos/my-app.git
+# Username: git (or anything)
+# Password: your API token
+
 cd my-app
 # ... make changes ...
 git push origin main
+```
+
+## Git Access
+
+Kod provides Git access over HTTP. Authenticate using your API token as the password:
+
+```bash
+# Clone a repository
+git clone http://localhost:3000/repos/my-app.git
+
+# Git will prompt for credentials:
+# Username: git (or anything)
+# Password: your_api_token
+
+# Configure git to remember credentials
+git config --global credential.helper store
+```
+
+### Collaborator Workflow
+
+To give another user access to a repository:
+
+```bash
+# 1. Add them as a collaborator
+kod repo my-app collaborator add alice
+
+# 2. Create a token for them
+kod token create alice-token --username alice --permissions repo:read,repo:write
+
+# 3. Share the token with Alice - she uses it as the git password
 ```
 
 ## CLI Reference
@@ -109,10 +145,9 @@ kod repo delete <name>                # Delete a repository
 ### Collaborators
 
 ```bash
-kod repo <name> collaborator list                    # List collaborators
-kod repo <name> collaborator add <username>          # Add (uses ~/.ssh/id_*.pub)
-kod repo <name> collaborator add <username> <key>    # Add with specific key file
-kod repo <name> collaborator remove <username>       # Remove collaborator
+kod repo <name> collaborator list              # List collaborators
+kod repo <name> collaborator add <username>    # Add collaborator
+kod repo <name> collaborator remove <username> # Remove collaborator
 ```
 
 ### API Tokens
@@ -121,6 +156,7 @@ kod repo <name> collaborator remove <username>       # Remove collaborator
 kod token list                                           # List all tokens (admin only)
 kod token create <name>                                  # Create token with defaults
 kod token create <name> --permissions repo:read,workflow:trigger
+kod token create <name> --username alice                 # Link to collaborator
 kod token create <name> --expires 30                     # Expires in 30 days
 kod token delete <id>                                    # Delete a token (admin only)
 ```
@@ -224,16 +260,14 @@ Available variables:
 
 Kod uses a permission-based access control system. Each API token has specific permissions:
 
-| Permission           | Description                    |
-|----------------------|--------------------------------|
-| `repo:read`          | List and view repositories     |
-| `repo:write`         | Create and update repositories |
-| `repo:delete`        | Delete repositories            |
-| `collaborator:read`  | List collaborators             |
-| `collaborator:write` | Add/remove collaborators       |
-| `workflow:read`      | View workflow runs             |
-| `workflow:trigger`   | Trigger workflows              |
-| `admin`              | Full access to all operations  |
+- `repo:read` - List and view repositories, clone/fetch
+- `repo:write` - Create and update repositories, push
+- `repo:delete` - Delete repositories
+- `collaborator:read` - List collaborators
+- `collaborator:write` - Add/remove collaborators
+- `workflow:read` - View workflow runs
+- `workflow:trigger` - Trigger workflows
+- `admin` - Full access to all operations
 
 Default permissions for new tokens: `repo:read`, `repo:write`, `workflow:read`
 
@@ -243,13 +277,27 @@ Default permissions for new tokens: `repo:read`, `repo:write`, `workflow:read`
 - Only the owner (or admin) can delete, rename, or add collaborators
 - Non-owners with `repo:read` can view repos but not modify them
 
-### SSH Access Control
+### Collaborator Access Control
 
-When collaborators are added, their SSH public keys are managed in `~/.ssh/authorized_keys`:
+Tokens can be linked to collaborators using the `--username` flag:
 
-- Each key is restricted to only access repos the user is a collaborator on
-- Uses a forced command that validates repository access before allowing git operations
-- Keys are automatically updated when collaborators are added/removed
+```bash
+kod token create alice-token --username alice --permissions repo:read,repo:write
+```
+
+When a token is linked to a collaborator:
+
+- Git operations (clone/push) check if the collaborator has access to the repository
+- Admin tokens bypass collaborator checks
+
+### HTTP Authentication
+
+Git operations use HTTP Basic Auth:
+
+- Username can be anything (e.g., "git")
+- Password is the API token
+
+The server also accepts Bearer token authentication for API requests.
 
 ### Internal Endpoints
 
@@ -288,6 +336,14 @@ curl -H "Authorization: Bearer <token>" http://localhost:3000/repos
 | POST   | `/tokens`                          | Create API token (admin only)   |
 | DELETE | `/tokens/:id`                      | Delete API token (admin only)   |
 
+### Git HTTP Endpoints
+
+| Method | Path                                    | Description          |
+|--------|-----------------------------------------|----------------------|
+| GET    | `/repos/:name.git/info/refs`            | Git refs discovery   |
+| POST   | `/repos/:name.git/git-upload-pack`      | Git clone/fetch      |
+| POST   | `/repos/:name.git/git-receive-pack`     | Git push             |
+
 ### Example: Create Repository
 
 ```bash
@@ -314,20 +370,24 @@ curl -X POST http://localhost:3000/repos \
 {
   "port": 3000,
   "dataDir": "~/.kod/data",
-  "reposDir": "~/.kod/repos",
-  "apiToken": "kod_xxxxx"
+  "reposDir": "~/.kod/repos"
 }
 ```
 
+### Server Bootstrap
+
+On first start, if no API tokens exist and `KOD_ADMIN_TOKEN` is set, the server will automatically create an admin token with that value. This solves the chicken-and-egg problem of needing a token to create tokens.
+
 ### Environment Variables
 
-| Variable         | Description                              |
-|------------------|------------------------------------------|
-| `KOD_PORT`       | Server port                              |
-| `KOD_DATA_DIR`   | Database directory                       |
-| `KOD_REPOS_DIR`  | Git repositories directory               |
-| `KOD_API_TOKEN`  | API authentication token (server & CLI)  |
-| `KOD_SERVER_URL` | Server URL for CLI commands              |
+| Variable          | Description                                        |
+|-------------------|----------------------------------------------------|
+| `KOD_ADMIN_TOKEN` | Bootstrap admin token (created on first start)     |
+| `KOD_PORT`        | Server port                                        |
+| `KOD_DATA_DIR`    | Database directory                                 |
+| `KOD_REPOS_DIR`   | Git repositories directory                         |
+| `KOD_API_TOKEN`   | API authentication token (server & CLI)            |
+| `KOD_SERVER_URL`  | Server URL for CLI commands                        |
 
 #### Configuration Priority
 

@@ -45,6 +45,7 @@ const createToken = (db: Database): Route => ({
       name?: string;
       permissions?: TokenPermission[];
       expiresInDays?: number;
+      username?: string;
     };
 
     if (!body?.name) {
@@ -81,10 +82,22 @@ const createToken = (db: Database): Route => ({
       }
     }
 
+    // If username provided, verify the collaborator exists
+    if (body.username) {
+      const collaborator = await db.getCollaborator(body.username);
+      if (!collaborator) {
+        return {
+          status: 400,
+          body: { error: `Collaborator '${body.username}' not found` }
+        };
+      }
+    }
+
     const { token, id, expiresAt } = await db.createApiToken(
       body.name,
       permissions,
-      body.expiresInDays
+      body.expiresInDays,
+      body.username
     );
 
     return {
@@ -95,6 +108,7 @@ const createToken = (db: Database): Route => ({
         token, // Only shown once!
         permissions,
         expiresAt,
+        username: body.username,
         message: 'Save this token - it will not be shown again'
       }
     };

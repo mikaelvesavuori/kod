@@ -13,6 +13,7 @@ export async function listTokens(): Promise<void> {
         lastUsedAt?: number;
         expiresAt?: number;
         permissions: TokenPermission[];
+        username?: string;
       }>
     >('/tokens');
 
@@ -39,6 +40,9 @@ export async function listTokens(): Promise<void> {
       : 'never';
 
     console.log(`  ${token.name} (${token.id})`);
+    if (token.username) {
+      console.log(`    User: ${token.username}`);
+    }
     console.log(`    Created: ${created}`);
     console.log(`    Last used: ${lastUsed}`);
     console.log(`    Expires: ${expires}`);
@@ -50,7 +54,8 @@ export async function listTokens(): Promise<void> {
 export async function createToken(
   name: string,
   permissions: TokenPermission[],
-  expiresInDays?: number
+  expiresInDays?: number,
+  username?: string
 ): Promise<void> {
   const res = await api.post<{
     id: string;
@@ -58,8 +63,9 @@ export async function createToken(
     token: string;
     permissions: TokenPermission[];
     expiresAt?: number;
+    username?: string;
     message: string;
-  }>('/tokens', { name, permissions, expiresInDays });
+  }>('/tokens', { name, permissions, expiresInDays, username });
 
   if (!res.ok) {
     console.error(`Error: ${res.error}`);
@@ -71,6 +77,9 @@ export async function createToken(
   console.log('\nToken created successfully!\n');
   console.log(`  Name: ${data.name}`);
   console.log(`  ID: ${data.id}`);
+  if (data.username) {
+    console.log(`  User: ${data.username}`);
+  }
   console.log(`  Permissions: ${data.permissions.join(', ')}`);
   if (data.expiresAt) {
     console.log(`  Expires: ${new Date(data.expiresAt).toISOString()}`);
@@ -138,4 +147,13 @@ export function parseExpiration(args: string[]): number | undefined {
   }
 
   return days;
+}
+
+export function parseUsername(args: string[]): string | undefined {
+  const userIndex = args.indexOf('--username');
+  if (userIndex === -1 || userIndex === args.length - 1) {
+    return undefined;
+  }
+
+  return args[userIndex + 1];
 }

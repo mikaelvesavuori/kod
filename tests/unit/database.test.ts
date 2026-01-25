@@ -114,7 +114,6 @@ describe('Database', () => {
     test('It should create and get a collaborator', async () => {
       const collab = {
         username: 'alice',
-        publicKey: 'ssh-rsa AAA...',
         addedAt: Date.now()
       };
 
@@ -122,13 +121,11 @@ describe('Database', () => {
       const result = await db.getCollaborator('alice');
 
       expect(result?.username).toBe('alice');
-      expect(result?.publicKey).toBe('ssh-rsa AAA...');
     });
 
     test('It should delete a collaborator', async () => {
       await db.createCollaborator({
         username: 'bob',
-        publicKey: 'ssh-rsa BBB...',
         addedAt: Date.now()
       });
 
@@ -275,6 +272,74 @@ describe('Database', () => {
 
       expect(app1Runs).toHaveLength(2);
       expect(app1Runs.every((r) => r.repoName === 'app1')).toBe(true);
+    });
+  });
+
+  describe('API Tokens', () => {
+    test('It should create a token without username', async () => {
+      const { token, id } = await db.createApiToken('test-token', [
+        'repo:read',
+        'repo:write'
+      ]);
+
+      expect(token).toMatch(/^kod_/);
+      expect(id).toBeDefined();
+
+      const validated = await db.validateToken(token);
+      expect(validated?.name).toBe('test-token');
+      expect(validated?.username).toBeUndefined();
+    });
+
+    test('It should create a token with username', async () => {
+      // First create a collaborator
+      await db.createCollaborator({
+        username: 'alice',
+        addedAt: Date.now()
+      });
+
+      const { token } = await db.createApiToken(
+        'alice-token',
+        ['repo:read', 'repo:write'],
+        undefined,
+        'alice'
+      );
+
+      const validated = await db.validateToken(token);
+      expect(validated?.name).toBe('alice-token');
+      expect(validated?.username).toBe('alice');
+    });
+
+    test('It should validate a token', async () => {
+      const { token } = await db.createApiToken('my-token', ['admin']);
+
+      const validated = await db.validateToken(token);
+
+      expect(validated?.permissions).toContain('admin');
+    });
+
+    test('It should return undefined for invalid token', async () => {
+      const validated = await db.validateToken('kod_invalid_token');
+
+      expect(validated).toBeUndefined();
+    });
+
+    test('It should list tokens without exposing hash', async () => {
+      await db.createApiToken('token1', ['repo:read']);
+      await db.createApiToken('token2', ['admin']);
+
+      const tokens = await db.listApiTokens();
+
+      expect(tokens).toHaveLength(2);
+      expect(tokens[0]).not.toHaveProperty('tokenHash');
+    });
+
+    test('It should delete a token', async () => {
+      const { token, id } = await db.createApiToken('to-delete', ['repo:read']);
+
+      await db.deleteApiToken(id);
+
+      const validated = await db.validateToken(token);
+      expect(validated).toBeUndefined();
     });
   });
 });

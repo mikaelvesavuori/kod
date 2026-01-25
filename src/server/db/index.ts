@@ -183,11 +183,13 @@ export class Database {
    * Create a new API token. Returns the plain token (only shown once).
    * The token is hashed before storage.
    * @param expiresInDays - Optional expiration in days (undefined = never expires)
+   * @param username - Optional collaborator username to link this token for Git access
    */
   async createApiToken(
     name: string,
     permissions: ApiToken['permissions'],
-    expiresInDays?: number
+    expiresInDays?: number,
+    username?: string
   ): Promise<{ token: string; id: string; expiresAt?: number }> {
     const id = this.generateId();
     const token = this.generateToken();
@@ -203,13 +205,33 @@ export class Database {
       name,
       createdAt: Date.now(),
       expiresAt,
-      permissions
+      permissions,
+      username
     };
 
     // Use PikoDB's built-in expiration if token expires
     await this.store.write(API_TOKENS_TABLE, id, apiToken, expiresAt);
 
     return { token, id, expiresAt };
+  }
+
+  /**
+   * Create an admin token with a known token value (for bootstrapping).
+   * Used when KOD_ADMIN_TOKEN env var is set on first server start.
+   */
+  async createAdminToken(token: string): Promise<void> {
+    const id = this.generateId();
+    const tokenHashed = hashToken(token);
+
+    const apiToken: ApiToken = {
+      id,
+      tokenHash: tokenHashed,
+      name: 'admin',
+      createdAt: Date.now(),
+      permissions: ['admin']
+    };
+
+    await this.store.write(API_TOKENS_TABLE, id, apiToken);
   }
 
   /**

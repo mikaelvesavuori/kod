@@ -9,7 +9,7 @@ export interface Repo {
 
 export interface Collaborator {
   username: string;
-  publicKey: string;
+  publicKey?: string; // Optional: only needed for SSH access (deprecated)
   addedAt: number;
 }
 
@@ -95,6 +95,7 @@ export interface HttpRequest {
   url: string;
   headers: Record<string, string | string[] | undefined>;
   body: unknown;
+  rawUrl?: string; // Full URL including query string
 }
 
 export interface HttpResponse {
@@ -115,7 +116,7 @@ export interface UpdateRepoRequest {
 
 export interface AddCollaboratorRequest {
   username: string;
-  publicKey: string;
+  publicKey?: string; // Optional: only needed for SSH access (deprecated)
 }
 
 export interface TriggerWorkflowRequest {
@@ -140,6 +141,7 @@ export interface ApiToken {
   lastUsedAt?: number;
   expiresAt?: number; // Unix timestamp, undefined = never expires
   permissions: TokenPermission[];
+  username?: string; // Optional: links token to a collaborator for Git access
 }
 
 export type TokenPermission =
