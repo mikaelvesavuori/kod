@@ -1,8 +1,34 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 import { generateApiToken, loadClientConfig } from '../../src/shared/config.js';
 
+const CONFIG_DIR = join(homedir(), '.kod');
+const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
+const BACKUP_FILE = join(CONFIG_DIR, 'config.json.test-backup');
+
 describe('Config', () => {
+  // Backup and restore config file to avoid test pollution from user's real config
+  let configBackup: string | null = null;
+
+  beforeAll(() => {
+    if (existsSync(CONFIG_FILE)) {
+      configBackup = readFileSync(CONFIG_FILE, 'utf-8');
+      unlinkSync(CONFIG_FILE);
+    }
+  });
+
+  afterAll(() => {
+    // Restore the original config file if it existed
+    if (configBackup !== null) {
+      if (!existsSync(CONFIG_DIR)) {
+        mkdirSync(CONFIG_DIR, { recursive: true });
+      }
+      writeFileSync(CONFIG_FILE, configBackup);
+    }
+  });
   describe('generateApiToken', () => {
     test('It should generate a token starting with kod_', () => {
       const token = generateApiToken();
