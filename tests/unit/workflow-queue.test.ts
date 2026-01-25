@@ -58,6 +58,7 @@ describe('WorkflowQueue', () => {
     // Create a temp clone to add files
     const tempClone = join(testDir, 'temp-clone');
     execSync(`git clone "${bareRepoPath}" "${tempClone}"`);
+    execSync('git checkout -b main', { cwd: tempClone });
 
     // Add a failing workflow
     const workflowDir = join(tempClone, '.kod', 'workflows');
@@ -117,6 +118,7 @@ run: exit 1
 
     const tempClone = join(testDir, 'temp-clone-pass');
     execSync(`git clone "${bareRepoPath}" "${tempClone}"`);
+    execSync('git checkout -b main', { cwd: tempClone });
 
     const workflowDir = join(tempClone, '.kod', 'workflows');
     mkdirSync(workflowDir, { recursive: true });
