@@ -1,10 +1,11 @@
-import { hashToken } from '../../shared/crypto.js';
+import { hashToken, encrypt, decrypt } from '../../shared/crypto.js';
 import type {
   Repo,
   Collaborator,
   RepoCollaborators,
   WorkflowRun,
-  ApiToken
+  ApiToken,
+  RepoSecret
 } from '../../shared/types.js';
 
 import { Store } from './Store.js';
@@ -14,6 +15,7 @@ const COLLABORATORS_TABLE = 'collaborators';
 const REPO_COLLABORATORS_TABLE = 'repo_collaborators';
 const WORKFLOW_RUNS_TABLE = 'workflow_runs';
 const API_TOKENS_TABLE = 'api_tokens';
+const SECRETS_TABLE = 'secrets';
 
 export class Database {
   private store: Store;
@@ -281,6 +283,100 @@ export class Database {
    */
   async deleteApiToken(id: string): Promise<void> {
     await this.store.delete(API_TOKENS_TABLE, id);
+  }
+
+  // Secret operations
+
+  /**
+   * Set a secret for a repository. Encrypts the value before storing.
+   * Creates or updates the secret.
+   */
+  async setSecret(
+    repoName: string,
+    name: string,
+    value: string
+  ): Promise<void> {
+    const key = `${repoName}:${name}`;
+    const now = Date.now();
+    const existing = (await this.store.get<RepoSecret>(SECRETS_TABLE, key)) as
+      | RepoSecret
+      | undefined;
+
+    const secret: RepoSecret = {
+      name,
+      repoName,
+      encryptedValue: encrypt(value),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now
+    };
+
+    await this.store.write(SECRETS_TABLE, key, secret);
+  }
+
+  /**
+   * Get a decrypted secret value.
+   */
+  async getSecretValue(
+    repoName: string,
+    name: string
+  ): Promise<string | undefined> {
+    const key = `${repoName}:${name}`;
+    const secret = (await this.store.get<RepoSecret>(SECRETS_TABLE, key)) as
+      | RepoSecret
+      | undefined;
+    if (!secret) return undefined;
+    return decrypt(secret.encryptedValue);
+  }
+
+  /**
+   * List all secrets for a repository (names and metadata only, no values).
+   */
+  async getRepoSecrets(
+    repoName: string
+  ): Promise<Omit<RepoSecret, 'encryptedValue'>[]> {
+    const all = (await this.store.get<RepoSecret>(
+      SECRETS_TABLE
+    )) as RepoSecret[];
+    if (!all) return [];
+
+    return all
+      .filter((s) => s.repoName === repoName)
+      .map(({ encryptedValue: _, ...rest }) => rest);
+  }
+
+  /**
+   * Delete a secret.
+   */
+  async deleteSecret(repoName: string, name: string): Promise<void> {
+    const key = `${repoName}:${name}`;
+    await this.store.delete(SECRETS_TABLE, key);
+  }
+
+  /**
+   * Check if any secrets exist in the database.
+   */
+  async hasSecrets(): Promise<boolean> {
+    const keys = await this.store.keys(SECRETS_TABLE);
+    return keys.length > 0;
+  }
+
+  /**
+   * Get all decrypted secrets for a repository as a key-value map.
+   * Used for injecting into workflow environments.
+   */
+  async getDecryptedSecrets(repoName: string): Promise<Record<string, string>> {
+    const all = (await this.store.get<RepoSecret>(
+      SECRETS_TABLE
+    )) as RepoSecret[];
+    if (!all) return {};
+
+    const secrets: Record<string, string> = {};
+    for (const s of all) {
+      if (s.repoName === repoName) {
+        secrets[s.name] = decrypt(s.encryptedValue);
+      }
+    }
+    return secrets;
   }
 
   private generateId(): string {

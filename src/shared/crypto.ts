@@ -18,11 +18,33 @@ const SALT_LENGTH = 32;
 const kodDir = join(homedir(), '.kod');
 const keyFile = join(kodDir, '.key');
 
+let userProvidedKey: Buffer | null = null;
+
+/**
+ * Set the encryption key from a user-provided value.
+ * The key is derived using scrypt for consistent key length.
+ * Must be called before any encrypt/decrypt operations when using secrets.
+ */
+export function setEncryptionKey(key: string): void {
+  userProvidedKey = scryptSync(key, 'kod-encryption-salt', KEY_LENGTH);
+}
+
+/**
+ * Check if an encryption key has been configured.
+ */
+export function hasEncryptionKey(): boolean {
+  return userProvidedKey !== null;
+}
+
 /**
  * Get or create the encryption key.
- * The key is derived from a random salt stored in ~/.kod/.key
+ * Uses user-provided key if set, otherwise falls back to auto-generated salt file.
  */
 function getEncryptionKey(): Buffer {
+  if (userProvidedKey) {
+    return userProvidedKey;
+  }
+
   if (!existsSync(kodDir)) {
     mkdirSync(kodDir, { recursive: true });
   }

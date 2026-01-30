@@ -4,18 +4,37 @@ import { createHttpServer } from './http-server.js';
 import { Database } from './db/index.js';
 import { RepoManager } from './git/RepoManager.js';
 import { WorkflowQueue } from './workflow/WorkflowQueue.js';
+import { setEncryptionKey, hasEncryptionKey } from '../shared/crypto.js';
 
 import { createRepoRoutes } from './routes/repos.js';
 import { createCollaboratorRoutes } from './routes/collaborators.js';
 import { createWorkflowRoutes } from './routes/workflows.js';
 import { createTokenRoutes } from './routes/tokens.js';
+import { createSecretRoutes } from './routes/secrets.js';
 import { createGitRoutes } from './routes/git.js';
 
 export async function startServer(config: ServerConfig): Promise<void> {
   console.log('Starting Kod server...');
 
+  // Initialize encryption key if provided
+  if (config.encryptionKey) {
+    setEncryptionKey(config.encryptionKey);
+  }
+
   // Initialize database
   const db = new Database(config.dataDir);
+
+  // Check if secrets exist but no encryption key is configured
+  const secretsExist = await db.hasSecrets();
+  if (secretsExist && !hasEncryptionKey()) {
+    console.error(
+      'Error: Secrets exist in the database but no encryption key is configured.'
+    );
+    console.error(
+      'Set KOD_ENCRYPTION_KEY env var or use --encryption-key to provide the key.'
+    );
+    process.exit(1);
+  }
 
   // Initialize repo manager
   const repoManager = new RepoManager(config.reposDir);
@@ -55,6 +74,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
     ...createCollaboratorRoutes(db),
     ...createWorkflowRoutes(db, queue),
     ...createTokenRoutes(db),
+    ...createSecretRoutes(db),
     ...createGitRoutes(db, repoManager)
   ];
 
@@ -75,14 +95,12 @@ export async function startServer(config: ServerConfig): Promise<void> {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  // Bootstrap: create admin token if none exist and KOD_ADMIN_TOKEN is set
+  // Bootstrap: create admin token if none exist and admin token is configured
   const tokens = await db.listApiTokens();
   if (tokens.length === 0) {
-    const adminToken = process.env.KOD_ADMIN_TOKEN;
-    if (adminToken) {
-      // Create admin token with the provided value
-      await db.createAdminToken(adminToken);
-      console.log('Created admin token from KOD_ADMIN_TOKEN');
+    if (config.adminToken) {
+      await db.createAdminToken(config.adminToken);
+      console.log('Created admin token from configuration');
     }
   }
 
@@ -95,10 +113,17 @@ export async function startServer(config: ServerConfig): Promise<void> {
     // Check if any tokens exist
     const currentTokens = await db.listApiTokens();
     if (currentTokens.length === 0) {
-      console.log(`  Auth: No tokens configured`);
-      console.log(
-        `  Set KOD_ADMIN_TOKEN env var and restart to create an admin token`
+      console.error('');
+      console.error(
+        '  WARNING: No API tokens configured. The server has no authentication.'
       );
+      console.error(
+        '  To create an admin token, set one of the following and restart:'
+      );
+      console.error('');
+      console.error('    KOD_ADMIN_TOKEN=<your-token> kod serve');
+      console.error('    kod serve --admin-token <your-token>');
+      console.error('');
     } else {
       console.log(`  Auth: ${currentTokens.length} API token(s) configured`);
     }

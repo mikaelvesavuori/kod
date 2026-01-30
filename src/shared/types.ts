@@ -77,6 +77,8 @@ export interface ServerConfig {
   dataDir: string;
   reposDir: string;
   apiToken: string;
+  adminToken: string;
+  encryptionKey: string;
 }
 
 // HTTP types
@@ -152,4 +154,14 @@ export type TokenPermission =
   | 'collaborator:write'
   | 'workflow:read'
   | 'workflow:trigger'
+  | 'secrets:read'
+  | 'secrets:write'
   | 'admin';
+
+export interface RepoSecret {
+  name: string;
+  repoName: string;
+  encryptedValue: string;
+  createdAt: number;
+  updatedAt: number;
+}

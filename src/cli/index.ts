@@ -144,20 +144,28 @@ async function serveCommand(args: string[]): Promise<void> {
       overrides.reposDir = args[++i];
     } else if (arg === '--token') {
       overrides.apiToken = args[++i];
+    } else if (arg === '--admin-token') {
+      overrides.adminToken = args[++i];
+    } else if (arg === '--encryption-key') {
+      overrides.encryptionKey = args[++i];
     } else if (arg === '-h' || arg === '--help') {
       console.log(`Usage: kod serve [options]
 
 Options:
-  --port, -p <port>     Port to listen on (default: 3000)
-  --data-dir <path>     Data directory for database
-  --repos-dir <path>    Directory for Git repositories
-  --token <token>       API token for authentication
+  --port, -p <port>          Port to listen on (default: 3000)
+  --data-dir <path>          Data directory for database
+  --repos-dir <path>         Directory for Git repositories
+  --token <token>            API token for authentication
+  --admin-token <token>      Admin token for first-time setup
+  --encryption-key <key>     Encryption key for secrets
 
 Environment variables:
-  KOD_PORT              Port to listen on
-  KOD_DATA_DIR          Data directory
-  KOD_REPOS_DIR         Repos directory
-  KOD_API_TOKEN         API token`);
+  KOD_PORT                   Port to listen on
+  KOD_DATA_DIR               Data directory
+  KOD_REPOS_DIR              Repos directory
+  KOD_API_TOKEN              API token
+  KOD_ADMIN_TOKEN            Admin token for first-time setup
+  KOD_ENCRYPTION_KEY         Encryption key for secrets`);
       return;
     }
   }
@@ -269,6 +277,7 @@ Valid permissions:
   repo:read, repo:write, repo:delete
   collaborator:read, collaborator:write
   workflow:read, workflow:trigger
+  secrets:read, secrets:write
   admin
 
 Examples:
@@ -390,7 +399,8 @@ Clone Options:
   -c, --credentials <token>      Override token for git authentication
 
 Permissions: repo:read, repo:write, repo:delete, collaborator:read,
-             collaborator:write, workflow:read, workflow:trigger, admin
+             collaborator:write, workflow:read, workflow:trigger,
+             secrets:read, secrets:write, admin
 
 Environment Variables:
   KOD_API_TOKEN                  API token for authentication

@@ -63,6 +63,8 @@ const createToken = (db: Database): Route => ({
       'collaborator:write',
       'workflow:read',
       'workflow:trigger',
+      'secrets:read',
+      'secrets:write',
       'admin'
     ];
 

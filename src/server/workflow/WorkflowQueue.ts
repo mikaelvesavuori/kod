@@ -127,9 +127,13 @@ export class WorkflowQueue {
           duration: 0
         };
       } else {
+        // Fetch and inject decrypted secrets into env
+        const secrets = await this.db.getDecryptedSecrets(repoName);
+        const env = { ...process.env, ...secrets } as Record<string, string>;
+
         // Create context
         const context: WorkflowContext = {
-          env: { ...process.env } as Record<string, string>,
+          env,
           branch,
           repo: repoName,
           workingDir: workDir

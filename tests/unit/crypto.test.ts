@@ -4,7 +4,9 @@ import {
   encrypt,
   decrypt,
   hashToken,
-  isEncrypted
+  isEncrypted,
+  setEncryptionKey,
+  hasEncryptionKey
 } from '../../src/shared/crypto.js';
 
 describe('Crypto utilities', () => {
@@ -88,6 +90,37 @@ describe('Crypto utilities', () => {
     test('It should return false for short base64 strings', () => {
       // Base64 that's too short to contain IV + authTag + ciphertext
       expect(isEncrypted('YWJj')).toBe(false);
+    });
+  });
+
+  describe('setEncryptionKey / hasEncryptionKey', () => {
+    test('It should report key is available after setting it', () => {
+      setEncryptionKey('my-test-key');
+      expect(hasEncryptionKey()).toBe(true);
+    });
+
+    test('It should encrypt and decrypt using a user-provided key', () => {
+      setEncryptionKey('user-provided-secret');
+
+      const original = 'sensitive data';
+      const encrypted = encrypt(original);
+      const decrypted = decrypt(encrypted);
+
+      expect(decrypted).toBe(original);
+      expect(encrypted).not.toBe(original);
+    });
+
+    test('It should produce consistent results with the same key', () => {
+      setEncryptionKey('consistent-key');
+
+      const original = 'test value';
+      const encrypted = encrypt(original);
+
+      // Re-set the same key
+      setEncryptionKey('consistent-key');
+      const decrypted = decrypt(encrypted);
+
+      expect(decrypted).toBe(original);
     });
   });
 });

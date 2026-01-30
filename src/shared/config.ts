@@ -16,7 +16,9 @@ const DEFAULT_SERVER_CONFIG: ServerConfig = {
   port: 3000,
   dataDir: join(CONFIG_DIR, 'data'),
   reposDir: join(CONFIG_DIR, 'repos'),
-  apiToken: ''
+  apiToken: '',
+  adminToken: '',
+  encryptionKey: ''
 };
 
 export function loadClientConfig(
@@ -91,6 +93,12 @@ export function loadServerConfig(
   }
   if (process.env.KOD_API_TOKEN) {
     config.apiToken = process.env.KOD_API_TOKEN;
+  }
+  if (process.env.KOD_ADMIN_TOKEN) {
+    config.adminToken = process.env.KOD_ADMIN_TOKEN;
+  }
+  if (process.env.KOD_ENCRYPTION_KEY) {
+    config.encryptionKey = process.env.KOD_ENCRYPTION_KEY;
   }
 
   // CLI overrides take precedence

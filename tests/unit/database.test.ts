@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: OK */
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -340,6 +341,126 @@ describe('Database', () => {
 
       const validated = await db.validateToken(token);
       expect(validated).toBeUndefined();
+    });
+
+    test('It should create an admin token with known value', async () => {
+      const knownToken = 'kod_admin_bootstrap_token';
+      await db.createAdminToken(knownToken);
+
+      const validated = await db.validateToken(knownToken);
+      expect(validated).toBeDefined();
+      expect(validated?.name).toBe('admin');
+      expect(validated?.permissions).toContain('admin');
+    });
+
+    test('It should create a token with expiration', async () => {
+      const { token } = await db.createApiToken(
+        'expiring-token',
+        ['repo:read'],
+        30 // 30 days
+      );
+
+      const validated = await db.validateToken(token);
+      expect(validated).toBeDefined();
+      expect(validated?.expiresAt).toBeDefined();
+      expect(validated!.expiresAt!).toBeGreaterThan(Date.now());
+    });
+
+    test('It should update lastUsedAt on validation', async () => {
+      const { token } = await db.createApiToken('tracked-token', ['repo:read']);
+
+      const before = Date.now();
+      await db.validateToken(token);
+      const validated = await db.validateToken(token);
+
+      expect(validated?.lastUsedAt).toBeDefined();
+      expect(validated!.lastUsedAt!).toBeGreaterThanOrEqual(before);
+    });
+  });
+
+  describe('Secrets', () => {
+    test('It should set and get a secret', async () => {
+      await db.setSecret('my-repo', 'API_KEY', 'secret-value-123');
+
+      const value = await db.getSecretValue('my-repo', 'API_KEY');
+      expect(value).toBe('secret-value-123');
+    });
+
+    test('It should return undefined for non-existent secret', async () => {
+      const value = await db.getSecretValue('my-repo', 'NONEXISTENT');
+      expect(value).toBeUndefined();
+    });
+
+    test('It should update an existing secret', async () => {
+      await db.setSecret('my-repo', 'DB_PASS', 'old-password');
+      await db.setSecret('my-repo', 'DB_PASS', 'new-password');
+
+      const value = await db.getSecretValue('my-repo', 'DB_PASS');
+      expect(value).toBe('new-password');
+    });
+
+    test('It should preserve createdAt when updating a secret', async () => {
+      await db.setSecret('my-repo', 'TOKEN', 'value1');
+
+      // Small delay to ensure timestamps differ
+      await new Promise((r) => setTimeout(r, 10));
+      await db.setSecret('my-repo', 'TOKEN', 'value2');
+
+      // We can't directly access createdAt from getSecretValue,
+      // but getRepoSecrets returns metadata
+      const secrets = await db.getRepoSecrets('my-repo');
+      const tokenSecret = secrets.find((s) => s.name === 'TOKEN');
+      expect(tokenSecret).toBeDefined();
+      expect(tokenSecret!.updatedAt).toBeGreaterThan(tokenSecret!.createdAt);
+    });
+
+    test('It should list repo secrets without values', async () => {
+      await db.setSecret('my-repo', 'SECRET_A', 'value-a');
+      await db.setSecret('my-repo', 'SECRET_B', 'value-b');
+      await db.setSecret('other-repo', 'SECRET_C', 'value-c');
+
+      const secrets = await db.getRepoSecrets('my-repo');
+
+      expect(secrets).toHaveLength(2);
+      expect(secrets.map((s) => s.name)).toContain('SECRET_A');
+      expect(secrets.map((s) => s.name)).toContain('SECRET_B');
+      // Ensure encrypted values are not exposed
+      for (const s of secrets) {
+        expect(s).not.toHaveProperty('encryptedValue');
+      }
+    });
+
+    test('It should delete a secret', async () => {
+      await db.setSecret('my-repo', 'TO_DELETE', 'value');
+      await db.deleteSecret('my-repo', 'TO_DELETE');
+
+      const value = await db.getSecretValue('my-repo', 'TO_DELETE');
+      expect(value).toBeUndefined();
+    });
+
+    test('It should check if any secrets exist', async () => {
+      expect(await db.hasSecrets()).toBe(false);
+
+      await db.setSecret('my-repo', 'KEY', 'value');
+      expect(await db.hasSecrets()).toBe(true);
+    });
+
+    test('It should get all decrypted secrets for a repo', async () => {
+      await db.setSecret('my-repo', 'DB_HOST', 'localhost');
+      await db.setSecret('my-repo', 'DB_PORT', '5432');
+      await db.setSecret('other-repo', 'OTHER_KEY', 'other-value');
+
+      const secrets = await db.getDecryptedSecrets('my-repo');
+
+      expect(secrets).toEqual({
+        DB_HOST: 'localhost',
+        DB_PORT: '5432'
+      });
+    });
+
+    test('It should return empty object for repo with no secrets', async () => {
+      const secrets = await db.getDecryptedSecrets('no-secrets-repo');
+      expect(secrets).toEqual({});
     });
   });
 });
