@@ -119,9 +119,13 @@ async function main(): Promise<void> {
         break;
       }
 
+      case 'help':
+        showHelp();
+        break;
+
       default:
         console.error(`Unknown command: ${command}`);
-        console.error('Run "kod --help" for usage.');
+        console.error('Run "kod help" for usage.');
         process.exit(1);
     }
   } catch (err) {
