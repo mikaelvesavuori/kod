@@ -61,9 +61,9 @@ fi
 print_info "Checking for latest version..."
 
 if command -v curl &> /dev/null; then
-    VERSION_JSON=$(curl -sSL "https://api.itskod.com/prod/version/core" 2>/dev/null || echo "")
+    VERSION_JSON=$(curl -sSL "https://api.itskod.com/version" 2>/dev/null || echo "")
 elif command -v wget &> /dev/null; then
-    VERSION_JSON=$(wget -q -O - "https://api.itskod.com/prod/version/core" 2>/dev/null || echo "")
+    VERSION_JSON=$(wget -q -O - "https://api.itskod.com/version" 2>/dev/null || echo "")
 fi
 
 # Parse version (try node first, fallback to grep)

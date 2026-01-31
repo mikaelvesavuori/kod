@@ -10,7 +10,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export const RELEASE_URL = 'https://itskod.com/release';
-export const VERSION_API_URL = 'https://api.itskod.com/prod/version/core';
+export const VERSION_API_URL = 'https://api.itskod.com/version';
 
 export interface VersionResponse {
   version: string;

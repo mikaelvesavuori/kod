@@ -234,7 +234,7 @@ fi
 
 # Check latest version
 print_info "Checking for latest version..."
-VERSION_JSON=$(curl -sSL "https://api.itskod.com/prod/version/core" 2>/dev/null || echo "")
+VERSION_JSON=$(curl -sSL "https://api.itskod.com/version" 2>/dev/null || echo "")
 LATEST_VERSION=""
 if [ -n "$VERSION_JSON" ]; then
     LATEST_VERSION=$(echo "$VERSION_JSON" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/' 2>/dev/null || echo "")
