@@ -17,6 +17,9 @@ await build({
   platform: 'node',
   target: 'node24',
   format: 'esm',
+  define: {
+    __PKG_VERSION__: JSON.stringify(packageVersion)
+  },
   banner: {
     js: '#!/usr/bin/env node\n// Kod - Minimalist Git repository management'
   }

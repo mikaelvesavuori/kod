@@ -30,7 +30,8 @@ import { uninstallCommand } from './commands/uninstall.js';
 import { cloneRepo, parseCloneArgs } from './commands/clone.js';
 import { setConfigOverrides } from './http-client.js';
 
-const VERSION = '0.0.1';
+declare const __PKG_VERSION__: string;
+const VERSION = __PKG_VERSION__;
 
 interface ParsedArgs {
   globalOverrides: Partial<KodConfig>;
