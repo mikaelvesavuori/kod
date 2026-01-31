@@ -73,9 +73,6 @@ jobs:
           wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/kod_${VERSION}.zip --file=kod_${VERSION}.zip --jurisdiction=eu --remote
           wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/kod_latest.zip --file=kod_latest.zip --jurisdiction=eu --remote
 
-      - name: Publish to NPM
-        run: npm publish --provenance --access public
-
       - name: Notify backoffice API
         env:
           VERSION: ${{ steps.version.outputs.version }}
