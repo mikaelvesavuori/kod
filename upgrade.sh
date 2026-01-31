@@ -3,6 +3,7 @@
 # Kod Upgrade Script
 # Standalone script to upgrade Kod to the latest version
 # Can be run even if the main kod binary is broken
+# Usage: curl -sSL https://releases.itskod.com/upgrade.sh | bash
 
 set -e
 
@@ -28,7 +29,7 @@ print_info() {
 BIN_DIR="$HOME/.local/bin"
 INSTALL_DIR="$HOME/.kod"
 VERSION_FILE="$INSTALL_DIR/VERSION"
-RELEASE_URL="https://itskod.com/release"
+RELEASE_BASE_URL="https://releases.itskod.com"
 
 print_info "Kod Upgrade Tool"
 echo ""
@@ -90,8 +91,10 @@ if [ -n "$CURRENT_VERSION" ] && [ -n "$LATEST_VERSION" ] && [ "$CURRENT_VERSION"
 fi
 
 # Perform upgrade
-if [ -n "$LATEST_VERSION" ]; then
+if [ -n "$CURRENT_VERSION" ] && [ -n "$LATEST_VERSION" ]; then
     print_info "Upgrading from v$CURRENT_VERSION to v$LATEST_VERSION..."
+elif [ -n "$LATEST_VERSION" ]; then
+    print_info "Installing v$LATEST_VERSION..."
 else
     print_info "Upgrading to latest version..."
 fi
@@ -102,13 +105,13 @@ mkdir -p "$INSTALL_DIR"
 
 # Download latest release
 TEMP_DIR=$(mktemp -d)
-TEMP_ZIP="$TEMP_DIR/kod.zip"
+TEMP_ZIP="$TEMP_DIR/kod_latest.zip"
 
 print_info "Downloading latest release..."
 if command -v curl &> /dev/null; then
-    curl -fsSL -o "$TEMP_ZIP" "$RELEASE_URL/latest.zip"
+    curl -fsSL -o "$TEMP_ZIP" "$RELEASE_BASE_URL/kod_latest.zip"
 elif command -v wget &> /dev/null; then
-    wget -q -O "$TEMP_ZIP" "$RELEASE_URL/latest.zip"
+    wget -q -O "$TEMP_ZIP" "$RELEASE_BASE_URL/kod_latest.zip"
 fi
 
 # Extract
@@ -123,7 +126,7 @@ if [ -f "$BIN_DIR/kod" ]; then
 fi
 
 # Install new version
-mv "$TEMP_DIR/kod/kod.js" "$BIN_DIR/kod"
+cp "$TEMP_DIR/kod/kod.mjs" "$BIN_DIR/kod"
 chmod +x "$BIN_DIR/kod"
 
 # Copy VERSION file if present
@@ -141,14 +144,6 @@ echo ""
 if [ -f "$VERSION_FILE" ]; then
     NEW_VERSION=$(cat "$VERSION_FILE" | tr -d '[:space:]')
     print_info "Installed version: v$NEW_VERSION"
-fi
-
-# Check if running as systemd service
-if systemctl is-active --quiet kod.service 2>/dev/null; then
-    echo ""
-    print_info "Kod is running as a systemd service."
-    print_info "Restart the service to apply the upgrade:"
-    echo "  sudo systemctl restart kod.service"
 fi
 
 echo ""
