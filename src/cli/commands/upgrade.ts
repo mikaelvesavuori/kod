@@ -9,7 +9,7 @@ import {
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-export const RELEASE_URL = 'https://itskod.com/release';
+export const RELEASE_URL = 'https://releases.itskod.com';
 export const VERSION_API_URL = 'https://api.itskod.com/version';
 
 export interface VersionResponse {
@@ -145,7 +145,7 @@ export async function upgradeCommand(): Promise<void> {
     const binDir = getBinDir();
     const installDir = getInstallDir();
     const kodBinary = join(binDir, 'kod');
-    const newBinary = join(extractDir, 'kod', 'kod.js');
+    const newBinary = join(extractDir, 'kod', 'kod.mjs');
     const newVersionFile = join(extractDir, 'kod', 'VERSION');
 
     // Ensure directories exist
