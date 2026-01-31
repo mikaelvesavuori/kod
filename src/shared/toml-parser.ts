@@ -200,9 +200,15 @@ export function evaluateCondition(
   }
 
   // Handle env.VAR == 'value'
-  const envEqMatch = trimmed.match(/^env\.(\w+)\s*==\s*["']([^"']+)["']$/);
+  const envEqMatch = trimmed.match(/^env\.(\w+)\s*==\s*["']([^"']*)["']$/);
   if (envEqMatch) {
-    return env[envEqMatch[1]] === envEqMatch[2];
+    return (env[envEqMatch[1]] ?? '') === envEqMatch[2];
+  }
+
+  // Handle env.VAR != 'value'
+  const envNeqMatch = trimmed.match(/^env\.(\w+)\s*!=\s*["']([^"']*)["']$/);
+  if (envNeqMatch) {
+    return (env[envNeqMatch[1]] ?? '') !== envNeqMatch[2];
   }
 
   // Unknown condition format - default to true

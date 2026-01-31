@@ -8,8 +8,9 @@ Minimalist Git repository management with workflow automation. A self-hosted, ze
 - **Collaborator management** - Add/remove users with token-based access control
 - **Git over HTTP** - Clone and push using API tokens
 - **Workflow automation** - Run TOML-defined workflows on push or locally
+- **Secrets management** - Encrypted per-repository secrets injected into workflows
 - **Single binary** - One `kod` command for CLI and server
-- **Zero runtime dependencies** - Only requires Node.js 18+
+- **Minimal dependencies** - Only requires Node.js 24+
 
 ## Installation
 
@@ -130,15 +131,19 @@ kod serve [options]                   # Start the Kod server
   --data-dir <path>                   # Database directory
   --repos-dir <path>                  # Git repositories directory
   --token <token>                     # API token
+  --admin-token <token>               # Admin token for first-time setup
+  --encryption-key <key>              # Encryption key for secrets
 ```
 
 ### Clone
 
 ```bash
-kod clone <repo>                      # Clone a repository
+kod clone <name>                      # Clone by repository name
+kod clone <url>                       # Clone by full URL
+kod clone <name> --credentials <tok>  # Clone with a specific token
 ```
 
-The clone command accepts only the repository name (not a full URL). It uses your configured server URL and API token to authenticate automatically.
+The clone command accepts a repository name or a full URL. When given a name, it uses your configured server URL and API token to authenticate automatically. Use `--credentials` (or `-c`) to override the token.
 
 ### Repository Management
 
@@ -174,7 +179,6 @@ kod token delete <id>                                    # Delete a token (admin
 ```bash
 kod workflow <file.toml> [more...]    # Run workflow(s) locally
 kod workflow build.toml,deploy.toml   # Comma-separated files
-kod workflow                          # Auto-discover from .kod/workflows/
 kod workflow status [repo]            # Check workflow run status (requires server)
 
 # Override branch for local testing
@@ -231,6 +235,7 @@ Supported conditions:
 - `branch == 'value'` - Run if branch matches
 - `branch != 'value'` - Run if branch doesn't match
 - `env.VAR == 'value'` - Run if environment variable matches
+- `env.VAR != 'value'` - Run if environment variable doesn't match
 
 ```toml
 [step:deploy staging]
@@ -275,9 +280,11 @@ Kod uses a permission-based access control system. Each API token has specific p
 - `collaborator:write` - Add/remove collaborators
 - `workflow:read` - View workflow runs
 - `workflow:trigger` - Trigger workflows
+- `secrets:read` - List secret names (no values)
+- `secrets:write` - Create, update, and delete secrets
 - `admin` - Full access to all operations
 
-Default permissions for new tokens: `repo:read`, `repo:write`, `workflow:read`
+Default permissions for new tokens: `repo:read`, `repo:write`, `workflow:read` (via CLI) or `repo:read`, `repo:write` (via API)
 
 ### Repository Ownership
 
@@ -340,6 +347,9 @@ curl -H "Authorization: Bearer <token>" http://localhost:3000/repos
 | GET    | `/repos/:name/workflows`           | List workflow runs              |
 | GET    | `/repos/:name/workflows/:id`       | Get workflow run details        |
 | GET    | `/workflows/status`                | Global workflow status          |
+| GET    | `/repos/:name/secrets`             | List secrets (names only)       |
+| PUT    | `/repos/:name/secrets/:secretName` | Create or update a secret       |
+| DELETE | `/repos/:name/secrets/:secretName` | Delete a secret                 |
 | GET    | `/tokens`                          | List API tokens (admin only)    |
 | POST   | `/tokens`                          | Create API token (admin only)   |
 | DELETE | `/tokens/:id`                      | Delete API token (admin only)   |
@@ -388,14 +398,15 @@ On first start, if no API tokens exist and `KOD_ADMIN_TOKEN` is set, the server 
 
 ### Environment Variables
 
-| Variable          | Description                                        |
-|-------------------|----------------------------------------------------|
-| `KOD_ADMIN_TOKEN` | Bootstrap admin token (created on first start)     |
-| `KOD_PORT`        | Server port                                        |
-| `KOD_DATA_DIR`    | Database directory                                 |
-| `KOD_REPOS_DIR`   | Git repositories directory                         |
-| `KOD_API_TOKEN`   | API authentication token (server & CLI)            |
-| `KOD_SERVER_URL`  | Server URL for CLI commands                        |
+| Variable             | Description                                        |
+|----------------------|----------------------------------------------------|
+| `KOD_ADMIN_TOKEN`    | Bootstrap admin token (created on first start)     |
+| `KOD_PORT`           | Server port                                        |
+| `KOD_DATA_DIR`       | Database directory                                 |
+| `KOD_REPOS_DIR`      | Git repositories directory                         |
+| `KOD_API_TOKEN`      | API authentication token (server & CLI)            |
+| `KOD_SERVER_URL`     | Server URL for CLI commands                        |
+| `KOD_ENCRYPTION_KEY` | Encryption key for secrets (AES-256-GCM)           |
 
 #### Configuration Priority
 
@@ -426,4 +437,4 @@ KOD_API_TOKEN=kod_abc123 kod -s http://myserver:3000 repo list
 
 ## License
 
-MIT
+Commercial

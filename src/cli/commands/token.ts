@@ -110,6 +110,8 @@ export function parsePermissions(args: string[]): TokenPermission[] {
     'collaborator:write',
     'workflow:read',
     'workflow:trigger',
+    'secrets:read',
+    'secrets:write',
     'admin'
   ];
 
