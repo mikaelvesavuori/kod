@@ -5,7 +5,7 @@ Minimalist Git repository management with workflow automation. A self-hosted, mi
 ## Installation
 
 ```bash
-curl -fsSL https://itskod.com/release/latest.zip -o kod.zip && unzip kod.zip && chmod +x kod/kod.js && sudo mv kod/kod.js /usr/local/bin/kod && rm -rf kod kod.zip
+curl -sSL https://releases.itskod.com/install.sh | bash
 ```
 
 ## Quick Start

@@ -50,7 +50,7 @@ export async function downloadAndExtract(
   tempDir: string,
   releaseUrl: string = RELEASE_URL
 ): Promise<string> {
-  const zipPath = join(tempDir, 'kod.zip');
+  const zipPath = join(tempDir, 'kod_latest.zip');
   const extractDir = join(tempDir, 'kod-extract');
 
   // Download

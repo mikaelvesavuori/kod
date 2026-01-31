@@ -133,7 +133,7 @@ chown -R kod:kod /home/kod/.kod
 
 # Install Kod
 echo "Installing Kod..."
-curl -fsSL https://itskod.com/release/latest.zip -o /tmp/kod.zip
+curl -fsSL https://itskod.com/release/kod_latest.zip -o /tmp/kod.zip
 unzip -o /tmp/kod.zip -d /tmp/
 mv /tmp/kod/kod.js /home/kod/.local/bin/kod || {
     mkdir -p /home/kod/.local/bin
