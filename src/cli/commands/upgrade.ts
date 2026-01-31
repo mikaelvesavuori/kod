@@ -54,7 +54,7 @@ export async function downloadAndExtract(
   const extractDir = join(tempDir, 'kod-extract');
 
   // Download
-  const response = await fetch(`${releaseUrl}/latest.zip`);
+  const response = await fetch(`${releaseUrl}/kod_latest.zip`);
   if (!response.ok) {
     throw new Error(
       `Failed to download: ${response.status} ${response.statusText}`
