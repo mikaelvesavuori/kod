@@ -8,15 +8,20 @@ const packageVersion = getPackageVersion();
 
 console.log(`Building Kod (${packageVersion})...`);
 
-await build({
-  entryPoints: ['src/cli/index.ts'],
-  outfile: 'dist/kod.mjs',
+const sharedOptions = {
   bundle: true,
   minify: true,
   treeShaking: true,
   platform: 'node',
   target: 'node24',
-  format: 'esm',
+  format: 'esm'
+};
+
+// Main CLI
+await build({
+  ...sharedOptions,
+  entryPoints: ['src/cli/index.ts'],
+  outfile: 'dist/kod.mjs',
   define: {
     __PKG_VERSION__: JSON.stringify(packageVersion)
   },
@@ -25,8 +30,22 @@ await build({
   }
 })
   .then(() => {
-    // Make the output executable
     chmodSync('dist/kod.mjs', 0o755);
     console.log('Build complete: dist/kod.mjs');
+  })
+  .catch(() => process.exit(1));
+
+// Git credential helper
+await build({
+  ...sharedOptions,
+  entryPoints: ['src/cli/git-credential-kod.ts'],
+  outfile: 'dist/git-credential-kod.mjs',
+  banner: {
+    js: '#!/usr/bin/env node\n// Kod Git credential helper'
+  }
+})
+  .then(() => {
+    chmodSync('dist/git-credential-kod.mjs', 0o755);
+    console.log('Build complete: dist/git-credential-kod.mjs');
   })
   .catch(() => process.exit(1));

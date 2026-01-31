@@ -55,7 +55,10 @@ export async function createRepo(name: string): Promise<void> {
   console.log('Clone with:');
   console.log(`  kod clone ${repo.name}`);
   console.log();
-  console.log('Or add as remote:');
+  console.log('Or with plain git (use your API token as password):');
+  console.log(`  git clone ${buildRepoUrl(repo.name)}`);
+  console.log();
+  console.log('Add as remote:');
   console.log(`  git remote add origin ${buildRepoUrl(repo.name)}`);
 }
 

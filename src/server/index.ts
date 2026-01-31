@@ -102,6 +102,13 @@ export async function startServer(config: ServerConfig): Promise<void> {
       await db.createAdminToken(config.adminToken);
       console.log('Created admin token from configuration');
     }
+  } else if (config.adminToken) {
+    console.warn(
+      '  NOTE: --admin-token was provided but ignored — tokens already exist in the database.'
+    );
+    console.warn(
+      '  To reset, delete the data directory and restart, or use "kod token create" to add new tokens.'
+    );
   }
 
   // Start listening

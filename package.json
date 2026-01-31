@@ -1,7 +1,7 @@
 {
   "name": "kod",
   "description": "Minimalist Git repository management with workflow automation",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "author": "Kod",
   "license": "COMMERCIAL",
   "keywords": [
@@ -13,7 +13,8 @@
   "type": "module",
   "main": "dist/kod.mjs",
   "bin": {
-    "kod": "dist/kod.mjs"
+    "kod": "dist/kod.mjs",
+    "git-credential-kod": "dist/git-credential-kod.mjs"
   },
   "repository": {
     "type": "git",
