@@ -1,6 +1,6 @@
 # Kod
 
-Minimalist Git repository management with workflow automation. A self-hosted, zero-dependency alternative to hosted Git platforms.
+Minimalist Git repository management with workflow automation. A self-hosted, minimal-dependency alternative to hosted Git platforms.
 
 ## Installation
 
