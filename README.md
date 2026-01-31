@@ -119,6 +119,13 @@ kod workflow <file.toml>               # Run workflow locally
 kod workflow status [repo]             # Check workflow status
 ```
 
+### Maintenance
+
+```bash
+kod upgrade                            # Upgrade to latest version
+kod uninstall                          # Remove Kod binary and data
+```
+
 ## VM Setup
 
 To set up Kod on a fresh VM (e.g., Scaleway, DigitalOcean):

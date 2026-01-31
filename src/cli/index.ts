@@ -26,6 +26,7 @@ import {
   parseUsername
 } from './commands/token.js';
 import { upgradeCommand } from './commands/upgrade.js';
+import { uninstallCommand } from './commands/uninstall.js';
 import { cloneRepo, parseCloneArgs } from './commands/clone.js';
 import { setConfigOverrides } from './http-client.js';
 
@@ -111,6 +112,10 @@ async function main(): Promise<void> {
 
       case 'upgrade':
         await upgradeCommand();
+        break;
+
+      case 'uninstall':
+        await uninstallCommand();
         break;
 
       case 'clone': {
@@ -370,6 +375,7 @@ Commands:
   serve                          Start the Kod server
   clone <url|name> [options]     Clone a repository (uses configured token)
   upgrade                        Upgrade Kod to the latest version
+  uninstall                      Remove Kod binary and data
 
   repo list                      List all repositories
   repo create <name>             Create a new repository

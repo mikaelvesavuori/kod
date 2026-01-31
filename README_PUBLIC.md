@@ -185,6 +185,13 @@ kod workflow status [repo]            # Check workflow run status (requires serv
 BRANCH=main kod workflow deploy.toml
 ```
 
+### Maintenance
+
+```bash
+kod upgrade                           # Upgrade to latest version
+kod uninstall                         # Remove Kod binary and data
+```
+
 ## Workflow Syntax
 
 Workflows are defined in TOML files. Place them in `.kod/workflows/` in your repository for automatic execution on push, or run them locally with `kod workflow`.
