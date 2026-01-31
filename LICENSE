@@ -1,11 +1,6 @@
-Kod Commercial Software License
+Kod Software License
 
 Copyright (c) 2026-present Mikael Vesavuori
-
-PROPRIETARY SOFTWARE - NOT OPEN SOURCE
-
-This software is proprietary and confidential. Unauthorized copying, modification,
-distribution, or use is strictly prohibited.
 
 ================================================================================
 IMPORTANT NOTICE
@@ -20,31 +15,21 @@ governs your use of this software and supersedes any conflicting terms in this
 file. By using this software, you agree to be bound by the complete agreement.
 
 ================================================================================
-LICENSE GRANTS
+LICENSE GRANT
 ================================================================================
 
 Subject to compliance with the full agreement at <https://itskod.com/agreement>,
-licensed users are granted the following rights:
+you are granted a free, non-exclusive, worldwide license to use this software
+for any purpose, including both personal and commercial use.
 
-FREE LICENSE (Individual/Non-Commercial Use):
+You may:
 
-- Natural persons may use this software for personal, educational, or other
-    non-commercial purposes
-- "Personal use" means use by an individual not acting on behalf of any
-    organization and not for commercial benefit
+- Use this software for personal, educational, and non-commercial purposes
+- Use this software for commercial and organizational purposes
+- Install and use the software on your own infrastructure
 
-COMMERCIAL LICENSE (Organizational/Commercial Use):
-
-- Organizations and commercial users must purchase a valid license
-- Trial periods up to 30 days are permitted for evaluation purposes
-- Licenses grant perpetual use of the major version purchased, including
-    all minor and patch updates to that major version
-- Upgrades to new major versions require purchase of a new license
-
-Licensed users may:
-
-- Install and use the software on their own infrastructure
-- Use the software according to their license tier and entitlements
+This software is provided free of charge. If you find it valuable, donations
+and sponsorships are appreciated but never required.
 
 ================================================================================
 RESTRICTIONS
@@ -57,7 +42,6 @@ You may NOT, without express written permission:
 - Remove, obscure, or modify any copyright, trademark, or license notices
 - Use this software to provide hosted services or SaaS offerings to third parties
 - Use this software for the primary purpose of developing competing products
-- Exceed the scope or usage limits defined in your license tier
 
 ================================================================================
 WARRANTY DISCLAIMER
@@ -81,9 +65,9 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
-CONTACT & LICENSING
+CONTACT
 ================================================================================
 
 For full terms and conditions:  <https://itskod.com/agreement>
-For licensing inquiries:         <contact@itskod.com>
-For general information:         <https://itskod.com>
+For inquiries:                  <contact@itskod.com>
+For general information:        <https://itskod.com>
