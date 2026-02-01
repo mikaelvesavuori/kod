@@ -16,7 +16,12 @@ import {
   removeCollaborator,
   listCollaborators
 } from './commands/collaborator.js';
-import { runWorkflowCommand, workflowStatus } from './commands/workflow.js';
+import {
+  runWorkflowCommand,
+  workflowStatus,
+  workflowShow,
+  workflowTrigger
+} from './commands/workflow.js';
 import {
   listTokens,
   createToken,
@@ -343,8 +348,10 @@ async function workflowCommand(args: string[]): Promise<void> {
     console.log(`Usage: kod workflow <command> [options]
 
 Commands:
-  kod workflow <file.toml> [file2.toml...]   Run workflow(s) locally
-  kod workflow status [repo]                 Check workflow status
+  kod workflow <file.toml> [file2.toml...]           Run workflow(s) locally
+  kod workflow status [repo]                         Check workflow status
+  kod workflow show <repo> <id>                      Show details of a specific run
+  kod workflow trigger <repo> [--branch <branch>]    Trigger a remote workflow
 
 Examples:
   kod workflow build.toml
@@ -352,7 +359,10 @@ Examples:
   kod workflow build.toml,deploy.toml
   BRANCH=main kod workflow build.toml
   kod workflow status
-  kod workflow status my-repo`);
+  kod workflow status my-repo
+  kod workflow show my-repo abc123
+  kod workflow trigger my-repo
+  kod workflow trigger my-repo --branch feature/login`);
     return;
   }
 
@@ -360,6 +370,24 @@ Examples:
 
   if (subcommand === 'status') {
     await workflowStatus(args[1]);
+  } else if (subcommand === 'show') {
+    if (args.length < 3) {
+      console.error('Usage: kod workflow show <repo> <id>');
+      process.exit(1);
+    }
+    await workflowShow(args[1], args[2]);
+  } else if (subcommand === 'trigger') {
+    if (args.length < 2) {
+      console.error('Usage: kod workflow trigger <repo> [--branch <branch>]');
+      process.exit(1);
+    }
+    const repoName = args[1];
+    let branch = 'main';
+    const branchIdx = args.indexOf('--branch');
+    if (branchIdx !== -1 && args[branchIdx + 1]) {
+      branch = args[branchIdx + 1];
+    }
+    await workflowTrigger(repoName, branch);
   } else {
     // Treat as workflow files
     await runWorkflowCommand(args);
@@ -394,6 +422,8 @@ Commands:
 
   workflow <file.toml> [...]     Run workflow(s) locally
   workflow status [repo]         Check workflow run status
+  workflow show <repo> <id>      Show details of a specific run
+  workflow trigger <repo>        Trigger a remote workflow
 
 Global Options:
   -t, --token <token>            API token for authentication

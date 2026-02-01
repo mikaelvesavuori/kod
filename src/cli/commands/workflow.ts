@@ -115,6 +115,108 @@ export async function runWorkflowCommand(files: string[]): Promise<void> {
   }
 }
 
+export async function workflowShow(
+  repoName: string,
+  runId: string
+): Promise<void> {
+  const response = await api.get<WorkflowRun>(
+    `/repos/${repoName}/workflows/${runId}`
+  );
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  const run = response.data!;
+
+  const icon =
+    run.status === 'completed'
+      ? '✓'
+      : run.status === 'failed'
+        ? '✗'
+        : run.status === 'running'
+          ? '⟳'
+          : '○';
+
+  console.log(`${icon} Workflow run ${run.id}\n`);
+  console.log(`  Repository: ${run.repoName}`);
+  console.log(`  Branch:     ${run.branch}`);
+  console.log(`  Status:     ${run.status}`);
+
+  if (run.startedAt) {
+    console.log(`  Started:    ${new Date(run.startedAt).toLocaleString()}`);
+  }
+  if (run.completedAt) {
+    console.log(`  Completed:  ${new Date(run.completedAt).toLocaleString()}`);
+  }
+
+  if (run.result) {
+    console.log(`  Duration:   ${run.result.duration}ms`);
+    console.log(`\nSteps:\n`);
+
+    for (const step of run.result.steps) {
+      const stepIcon = step.skipped ? '⊘' : step.success ? '✓' : '✗';
+      const status = step.skipped
+        ? 'skipped'
+        : step.success
+          ? 'passed'
+          : 'failed';
+      console.log(`  ${stepIcon} ${step.name} (${status}, ${step.duration}ms)`);
+
+      if (step.output && !step.skipped) {
+        const lines = step.output.trim().split('\n').slice(0, 10);
+        for (const line of lines) {
+          console.log(`      ${line}`);
+        }
+        if (step.output.trim().split('\n').length > 10) {
+          console.log('      ...(truncated)');
+        }
+      }
+
+      if (step.error) {
+        console.log(`      Error: ${step.error}`);
+      }
+    }
+
+    const passed = run.result.steps.filter(
+      (s) => s.success && !s.skipped
+    ).length;
+    const failed = run.result.steps.filter(
+      (s) => !s.success && !s.skipped
+    ).length;
+    const skipped = run.result.steps.filter((s) => s.skipped).length;
+    console.log(`\n  ${passed} passed, ${failed} failed, ${skipped} skipped`);
+  }
+}
+
+export async function workflowTrigger(
+  repoName: string,
+  branch: string,
+  files?: string[]
+): Promise<void> {
+  const body: { branch: string; files?: string[] } = { branch };
+  if (files && files.length > 0) {
+    body.files = files;
+  }
+
+  const response = await api.post<{
+    id: string;
+    status: string;
+    message: string;
+  }>(`/repos/${repoName}/workflows`, body);
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  const { id, message } = response.data!;
+  console.log(`${message}`);
+  console.log(`  Run ID: ${id}`);
+  console.log(`\nCheck status with: kod workflow show ${repoName} ${id}`);
+}
+
 export async function workflowStatus(repoName?: string): Promise<void> {
   if (repoName) {
     // Get status for specific repo

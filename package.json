@@ -1,9 +1,9 @@
 {
   "name": "kod",
   "description": "Minimalist Git repository management with workflow automation",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "Kod",
-  "license": "COMMERCIAL",
+  "license": "Kod Software License",
   "keywords": [
     "git",
     "workflow",
