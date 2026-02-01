@@ -1,0 +1,230 @@
+---
+title: Workflows
+description: Automate builds, tests, and deployments with TOML-based workflows.
+---
+
+Kod includes a built-in workflow engine that runs tasks when code is pushed to a repository. Workflows are defined in TOML files inside your repository.
+
+## Workflow Files
+
+Place workflow files in the `.kod/workflows/` directory of your repository:
+
+```text
+my-project/
+  .kod/
+    workflows/
+      build.toml
+      deploy.toml
+  src/
+  package.json
+```
+
+All `.toml` files in `.kod/workflows/` are discovered and executed automatically on push.
+
+## Syntax
+
+A workflow file contains steps defined as TOML sections:
+
+```toml
+timeout: 120
+
+[step:install]
+run: npm ci
+
+[step:lint]
+run: npm run lint
+
+[step:test]
+run: npm test
+
+[step:build]
+run: npm run build
+```
+
+### Step Properties
+
+| Property            | Type    | Description                                                     |
+|---------------------|---------|-----------------------------------------------------------------|
+| `run`               | string  | Command(s) to execute. Supports multiline.                      |
+| `if`                | string  | Conditional expression. Step is skipped if false.               |
+| `working_dir`       | string  | Working directory relative to repo root.                        |
+| `continue_on_error` | boolean | Continue to next step even if this one fails. Default: `false`. |
+
+### Workflow Properties
+
+| Property  | Type   | Description                                        |
+|-----------|--------|----------------------------------------------------|
+| `timeout` | number | Maximum execution time in seconds. Default: `300`. |
+
+## Multiline Commands
+
+Use indented lines for multi-command steps:
+
+```toml
+[step:setup]
+run:
+  npm ci
+  npm run generate
+  npm run migrate
+```
+
+## Conditional Steps
+
+Use `if` to run steps only on specific branches or when certain environment variables are set:
+
+```toml
+[step:deploy]
+if: "branch == 'main'"
+run: ./deploy.sh
+
+[step:preview]
+if: "branch != 'main'"
+run: ./deploy-preview.sh
+
+[step:notify]
+if: "env.SLACK_WEBHOOK != ''"
+run: curl -X POST $SLACK_WEBHOOK -d '{"text":"Deploy complete"}'
+```
+
+Supported conditions:
+
+- `branch == 'value'` -- matches exact branch name
+- `branch != 'value'` -- excludes a branch
+- `env.VAR == 'value'` -- checks an environment variable
+- `env.VAR != 'value'` -- checks an environment variable is not a value
+
+## Variable Interpolation
+
+Use `{variable}` syntax in commands:
+
+```toml
+[step:tag]
+run: docker build -t myapp:{branch} .
+
+[step:log]
+run: echo "Building {repo} on {branch}"
+```
+
+Available variables:
+
+| Variable         | Description                |
+|------------------|----------------------------|
+| `{branch}`       | Current Git branch         |
+| `{repo}`         | Repository name            |
+| `{env.VAR_NAME}` | Environment variable value |
+
+## Setting Environment Variables
+
+Set environment variables for subsequent steps:
+
+```toml
+[step:setup]
+run:
+  env.NODE_ENV = "production"
+  env.BUILD_ID = "build-123"
+
+[step:build]
+run: npm run build
+```
+
+## Working Directory
+
+Run steps in a subdirectory:
+
+```toml
+[step:frontend-test]
+working_dir: ./apps/frontend
+run: npm test
+
+[step:backend-test]
+working_dir: ./apps/backend
+run: npm test
+```
+
+## Error Handling
+
+By default, a failed step stops the entire workflow. Use `continue_on_error` to keep going:
+
+```toml
+[step:lint]
+run: npm run lint
+continue_on_error: true
+
+[step:test]
+run: npm test
+```
+
+## Secrets in Workflows
+
+Secrets stored via the [Secrets](/guides/secrets) feature are automatically injected as environment variables. Reference them like any other env var:
+
+```toml
+[step:deploy]
+if: "branch == 'main'"
+run: |
+  echo "Deploying with token..."
+  curl -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+```
+
+No special syntax needed -- if a secret named `DEPLOY_TOKEN` exists for the repository, it's available as `$DEPLOY_TOKEN` in all steps.
+
+## Triggering Workflows
+
+### Automatic (on push)
+
+Workflows run automatically when you `git push` to any branch. The post-receive hook triggers all workflow files found in `.kod/workflows/`.
+
+### Manual (via API)
+
+Trigger workflows through the API:
+
+```bash
+curl -X POST http://localhost:3000/repos/my-project/workflows \
+  -H "Authorization: Bearer kod_your_token" \
+  -H "Content-Type: application/json" \
+  -d '{"branch": "main"}'
+```
+
+### Local Execution
+
+Run workflow files locally without pushing:
+
+```bash
+kod workflow build.toml
+kod workflow build.toml deploy.toml
+```
+
+## Checking Status
+
+```bash
+# All workflow runs
+kod workflow status
+
+# For a specific repo
+kod workflow status my-project
+```
+
+## Example: Full CI/CD Pipeline
+
+```toml
+timeout: 300
+
+[step:install]
+run: npm ci
+
+[step:lint]
+run: npm run lint
+continue_on_error: true
+
+[step:test]
+run: npm test
+
+[step:build]
+run: npm run build
+
+[step:deploy]
+if: "branch == 'main'"
+run:
+  echo "Deploying to production..."
+  rsync -avz dist/ $DEPLOY_HOST:/var/www/app/
+```

@@ -1,6 +1,6 @@
 {
   "name": "kod",
-  "description": "Minimalist Git repository management with workflow automation",
+  "description": "The minimalist self-hosted Git tool that keeps you shipping.",
   "version": "0.0.5",
   "author": "Kod",
   "license": "Kod Software License",

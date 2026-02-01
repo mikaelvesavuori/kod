@@ -180,6 +180,9 @@ kod token delete <id>                                    # Delete a token (admin
 kod workflow <file.toml> [more...]    # Run workflow(s) locally
 kod workflow build.toml,deploy.toml   # Comma-separated files
 kod workflow status [repo]            # Check workflow run status (requires server)
+kod workflow show <repo> <id>         # Show details of a specific run
+kod workflow trigger <repo>           # Trigger a remote workflow
+  --branch <branch>                   # Branch to run on (default: main)
 
 # Override branch for local testing
 BRANCH=main kod workflow deploy.toml

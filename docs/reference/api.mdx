@@ -1,0 +1,287 @@
+---
+title: API Reference
+description: Complete HTTP API reference for the Kod server.
+---
+
+All API endpoints require authentication via a Bearer token, unless noted otherwise.
+
+```bash
+Authorization: Bearer kod_your_token
+```
+
+## Health
+
+### `GET /health`
+
+Health check endpoint. No authentication required.
+
+**Response:** `200`
+
+```json
+{ "status": "ok" }
+```
+
+## Repositories
+
+### `GET /repos`
+
+List all repositories. Requires `repo:read`.
+
+**Response:** `200`
+
+```json
+[
+  {
+    "name": "my-project",
+    "createdAt": 1706234567890,
+    "path": "/root/.kod/repos/my-project.git",
+    "ownerTokenId": "abc123"
+  }
+]
+```
+
+### `POST /repos`
+
+Create a new repository. Requires `repo:write`.
+
+**Request:**
+
+```json
+{ "name": "my-project" }
+```
+
+**Response:** `201`
+
+### `GET /repos/:name`
+
+Get repository details. Requires `repo:read`.
+
+**Response:** `200`
+
+### `PATCH /repos/:name`
+
+Update a repository (e.g., rename). Requires `repo:write`.
+
+**Request:**
+
+```json
+{ "name": "new-name" }
+```
+
+**Response:** `200`
+
+### `DELETE /repos/:name`
+
+Delete a repository. Requires `repo:delete`.
+
+**Response:** `204`
+
+## Collaborators
+
+### `GET /repos/:name/collaborators`
+
+List collaborators for a repository. Requires `collaborator:read`.
+
+**Response:** `200`
+
+```json
+{
+  "repoName": "my-project",
+  "collaborators": ["alice", "bob"]
+}
+```
+
+### `POST /repos/:name/collaborators`
+
+Add a collaborator. Requires `collaborator:write`.
+
+**Request:**
+
+```json
+{ "username": "alice" }
+```
+
+**Response:** `201`
+
+### `DELETE /repos/:name/collaborators/:username`
+
+Remove a collaborator. Requires `collaborator:write`.
+
+**Response:** `204`
+
+## Workflows
+
+### `POST /repos/:name/workflows`
+
+Trigger a workflow. Requires `workflow:trigger`.
+
+**Request:**
+
+```json
+{
+  "branch": "main",
+  "files": ["build.toml"]
+}
+```
+
+`files` is optional -- if omitted, all workflow files in `.kod/workflows/` are executed.
+
+**Response:** `202`
+
+```json
+{ "id": "abc123xyz456", "status": "queued" }
+```
+
+### `GET /repos/:name/workflows`
+
+List workflow runs for a repository. Requires `workflow:read`.
+
+**Response:** `200`
+
+```json
+[
+  {
+    "id": "abc123xyz456",
+    "repoName": "my-project",
+    "branch": "main",
+    "status": "completed",
+    "startedAt": 1706234567890,
+    "completedAt": 1706234600000,
+    "result": {
+      "success": true,
+      "duration": 32110,
+      "steps": [
+        {
+          "name": "test",
+          "success": true,
+          "output": "All tests passed",
+          "duration": 12000
+        }
+      ]
+    }
+  }
+]
+```
+
+### `GET /repos/:name/workflows/:id`
+
+Get a specific workflow run. Requires `workflow:read`.
+
+**Response:** `200`
+
+## Secrets
+
+### `GET /repos/:name/secrets`
+
+List secrets for a repository (names and metadata only). Requires `secrets:read`.
+
+**Response:** `200`
+
+```json
+[
+  {
+    "name": "DEPLOY_TOKEN",
+    "repoName": "my-project",
+    "createdAt": 1706234567890,
+    "updatedAt": 1706234567890
+  }
+]
+```
+
+### `PUT /repos/:name/secrets/:secretName`
+
+Create or update a secret. Requires `secrets:write`. Requires an encryption key to be configured on the server.
+
+Secret names must be valid environment variable names (letters, digits, underscores, starting with a letter or underscore).
+
+**Request:**
+
+```json
+{ "value": "my-secret-value" }
+```
+
+**Response:** `200`
+
+```json
+{
+  "name": "DEPLOY_TOKEN",
+  "repoName": "my-project",
+  "message": "Secret saved"
+}
+```
+
+### `DELETE /repos/:name/secrets/:secretName`
+
+Delete a secret. Requires `secrets:write`.
+
+**Response:** `204`
+
+## Tokens
+
+### `GET /tokens`
+
+List all API tokens. Requires `admin`.
+
+**Response:** `200`
+
+```json
+[
+  {
+    "id": "abc123",
+    "name": "ci-deploy",
+    "createdAt": 1706234567890,
+    "lastUsedAt": 1706234600000,
+    "permissions": ["repo:read", "workflow:trigger"]
+  }
+]
+```
+
+### `POST /tokens`
+
+Create a new API token. Requires `admin`.
+
+**Request:**
+
+```json
+{
+  "name": "ci-deploy",
+  "permissions": ["repo:read", "workflow:trigger"],
+  "expiresInDays": 30,
+  "username": "alice"
+}
+```
+
+All fields except `name` are optional. Default permissions: `["repo:read", "repo:write"]`.
+
+**Response:** `201`
+
+```json
+{
+  "id": "abc123",
+  "name": "ci-deploy",
+  "token": "kod_aBcDeFgHiJkLmNoPqRsTuVwXyZ012345",
+  "permissions": ["repo:read", "workflow:trigger"],
+  "expiresAt": 1709826567890,
+  "message": "Save this token - it will not be shown again"
+}
+```
+
+:::caution[One-time display]
+The `token` field is only returned at creation time. It cannot be retrieved later.
+:::
+
+### `DELETE /tokens/:id`
+
+Delete a token. Requires `admin`. You cannot delete your own token.
+
+**Response:** `204`
+
+## Git HTTP Protocol
+
+Kod serves Git over HTTP at `/repos/:name.git`. Authenticate using HTTP Basic Auth with your API token as the password:
+
+```bash
+git clone http://localhost:3000/repos/my-project.git
+# Username: git (or anything)
+# Password: your API token
+```

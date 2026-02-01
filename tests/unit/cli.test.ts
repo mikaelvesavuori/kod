@@ -25,13 +25,14 @@ describe('CLI', () => {
 
     test('It should allow overriding just the token', async () => {
       setConfigOverrides({
-        apiToken: 'kod_token_only'
+        apiToken: 'kod_token_only',
+        serverUrl: 'http://127.0.0.1:1'
       });
 
       const result = await apiRequest('GET', '/test');
 
-      // Will try to connect to default localhost:3000
       expect(result.ok).toBe(false);
+      expect(result.error).toContain('Connection failed');
     });
 
     test('It should allow overriding just the server URL', async () => {

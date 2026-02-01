@@ -1,0 +1,115 @@
+---
+title: Team Management
+description: How to add team members, manage access, and onboard collaborators.
+---
+
+Kod uses token-based identity — there are no user accounts or passwords. Each person gets a **token** with a **username** and **permissions**, and is then added as a **collaborator** to the repositories they need access to.
+
+## Adding a Team Member
+
+### 1. Create a token for the new user
+
+As the admin, create a named token with the appropriate permissions:
+
+```bash
+kod token create alice --username alice --permissions repo:read,repo:write
+```
+
+This outputs a token (e.g. `kod_abc123...`). **This is the only time the token value is shown** — copy it now.
+
+Choose permissions based on the user's role:
+
+| Role                 | Suggested permissions                                       |
+|----------------------|-------------------------------------------------------------|
+| Developer            | `repo:read,repo:write`                                      |
+| Read-only / reviewer | `repo:read`                                                 |
+| CI / deploy pipeline | `repo:read,workflow:trigger`                                |
+| Team lead            | `repo:read,repo:write,collaborator:read,collaborator:write` |
+| Admin                | `admin`                                                     |
+
+See the [CLI reference](/reference/cli) for the full list of available permissions.
+
+### 2. Add them as a collaborator
+
+Grant the user access to one or more repositories:
+
+```bash
+kod repo my-project collaborator add alice
+kod repo another-repo collaborator add alice
+```
+
+### 3. Share credentials
+
+Send the new user two things (through a secure channel):
+
+- **Server URL** — e.g. `https://git.example.com`
+- **API token** — the `kod_abc123...` value from step 1
+
+### 4. User configures their CLI
+
+The new user runs:
+
+```bash
+kod init
+```
+
+This prompts for the server URL and token, saves them to `~/.kod/config.json`, and configures the Git credential helper so that `git clone`, `git push`, and `git pull` authenticate automatically.
+
+They can now start working:
+
+```bash
+kod repo list
+kod clone my-project
+cd my-project
+# make changes...
+git add . && git commit -m "My first commit"
+git push origin main
+```
+
+## Managing Existing Team Members
+
+### List collaborators on a repository
+
+```bash
+kod repo my-project collaborator list
+```
+
+### Remove a collaborator
+
+```bash
+kod repo my-project collaborator remove alice
+```
+
+This revokes access to the repository. The user's token still exists — to fully revoke all access, delete their token as well.
+
+### Revoke a user entirely
+
+```bash
+# Find the token ID
+kod token list
+
+# Delete it
+kod token delete <id>
+```
+
+Once the token is deleted, all CLI and Git operations using it will fail immediately.
+
+### Rotate a user's token
+
+There is no token update operation. To rotate credentials:
+
+1. Create a new token with the same username and permissions
+2. Share the new token with the user
+3. Delete the old token
+4. The user updates their config by running `kod init` again
+
+## How Access Control Works
+
+Access is determined by two things:
+
+1. **Token permissions** — what operations the token allows (e.g. `repo:read`, `repo:write`)
+2. **Collaborator membership** — which repositories the user's username has been added to
+
+Both must be satisfied. A token with `repo:write` permission can only push to repositories where the associated username is listed as a collaborator.
+
+Tokens with the `admin` permission bypass collaborator checks and have full access to everything.
