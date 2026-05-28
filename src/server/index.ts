@@ -12,6 +12,11 @@ import { createWorkflowRoutes } from './routes/workflows.js';
 import { createTokenRoutes } from './routes/tokens.js';
 import { createSecretRoutes } from './routes/secrets.js';
 import { createGitRoutes } from './routes/git.js';
+import { createWebhookRoutes } from './routes/webhooks.js';
+import { createKeyRoutes } from './routes/keys.js';
+import { deliverWebhooks, startWebhookRetryWorker } from './webhooks.js';
+import { isValidBranchName, isValidCommit } from './workflow/validation.js';
+import { startSshServer } from './ssh/server.js';
 
 export async function startServer(config: ServerConfig): Promise<void> {
   console.log('Starting Kod server...');
@@ -62,11 +67,26 @@ export async function startServer(config: ServerConfig): Promise<void> {
         if (!body?.branch) {
           return { status: 400, body: { error: 'Branch is required' } };
         }
+        if (!(await isValidBranchName(body.branch))) {
+          return { status: 400, body: { error: 'Invalid branch name' } };
+        }
+        if (body.commit && !isValidCommit(body.commit)) {
+          return { status: 400, body: { error: 'Invalid commit' } };
+        }
         const repo = await db.getRepo(params.name);
         if (!repo) {
           return { status: 404, body: { error: 'Repository not found' } };
         }
-        await queue.enqueue(params.name, body.branch, '');
+        const runId = await queue.enqueue(
+          params.name,
+          body.branch,
+          body.commit ?? ''
+        );
+        void deliverWebhooks(db, params.name, 'push', {
+          branch: body.branch,
+          commit: body.commit ?? '',
+          workflowRunId: runId
+        }).catch(() => {});
         return { status: 202, body: { message: 'Workflow queued' } };
       }
     },
@@ -75,6 +95,8 @@ export async function startServer(config: ServerConfig): Promise<void> {
     ...createWorkflowRoutes(db, queue),
     ...createTokenRoutes(db),
     ...createSecretRoutes(db),
+    ...createWebhookRoutes(db),
+    ...createKeyRoutes(db),
     ...createGitRoutes(db, repoManager)
   ];
 
@@ -83,10 +105,23 @@ export async function startServer(config: ServerConfig): Promise<void> {
 
   // Create and start HTTP server
   const server = createHttpServer(routes, validateToken);
+  const webhookRetryWorker = startWebhookRetryWorker(db);
+  const sshServer = config.sshEnabled
+    ? await startSshServer({ db, repoManager, config }).catch((err) => {
+        console.warn(
+          `  WARNING: SSH server did not start: ${
+            err instanceof Error ? err.message : err
+          }`
+        );
+        return undefined;
+      })
+    : undefined;
 
   // Handle graceful shutdown
   const shutdown = async () => {
     console.log('\nShutting down...');
+    clearInterval(webhookRetryWorker);
+    sshServer?.close();
     server.close();
     await db.close();
     process.exit(0);
@@ -95,16 +130,17 @@ export async function startServer(config: ServerConfig): Promise<void> {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  // Bootstrap: create admin token if none exist and admin token is configured
+  // Bootstrap: create admin token if none exist and a bootstrap token is configured
   const tokens = await db.listApiTokens();
+  const bootstrapAdminToken = config.adminToken || config.apiToken;
   if (tokens.length === 0) {
-    if (config.adminToken) {
-      await db.createAdminToken(config.adminToken);
+    if (bootstrapAdminToken) {
+      await db.createAdminToken(bootstrapAdminToken);
       console.log('Created admin token from configuration');
     }
-  } else if (config.adminToken) {
+  } else if (bootstrapAdminToken) {
     console.warn(
-      '  NOTE: --admin-token was provided but ignored — tokens already exist in the database.'
+      '  NOTE: bootstrap token was provided but ignored — tokens already exist in the database.'
     );
     console.warn(
       '  To reset, delete the data directory and restart, or use "kod token create" to add new tokens.'
@@ -116,6 +152,11 @@ export async function startServer(config: ServerConfig): Promise<void> {
     console.log(`Kod server running on http://localhost:${config.port}`);
     console.log(`  Data dir: ${config.dataDir}`);
     console.log(`  Repos dir: ${config.reposDir}`);
+    if (sshServer) {
+      console.log(`  SSH: ssh://kod@localhost:${config.sshPort}/<repo>.git`);
+    } else {
+      console.log('  SSH: disabled');
+    }
 
     // Check if any tokens exist
     const currentTokens = await db.listApiTokens();

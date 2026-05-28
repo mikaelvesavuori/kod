@@ -7,7 +7,9 @@ import type {
 
 import type { Database } from '../db/index.js';
 import type { WorkflowQueue } from '../workflow/WorkflowQueue.js';
-import { hasPermission, getTokenId, FORBIDDEN } from '../auth.js';
+import { hasPermission, FORBIDDEN } from '../auth.js';
+import { hasRepoAccess } from '../access.js';
+import { isValidBranchName, isValidCommit } from '../workflow/validation.js';
 
 export function createWorkflowRoutes(
   db: Database,
@@ -34,21 +36,35 @@ export function createWorkflowRoutes(
           return { status: 404, body: { error: 'Repository not found' } };
         }
 
-        // Only owner, collaborators, or admin can trigger workflows
-        const isOwner = repo.ownerTokenId === getTokenId(req);
-        const isAdmin = hasPermission(req, 'admin');
-        if (!isOwner && !isAdmin) {
-          // Check if token name matches a collaborator
-          // (This is a simplification - in production you'd want better mapping)
-          return {
-            status: 403,
-            body: { error: 'Only the repository owner can trigger workflows' }
-          };
+        if (
+          !(await hasRepoAccess(req, db, repo, {
+            permission: 'workflow:trigger',
+            allowCollaborator: true
+          }))
+        ) {
+          return FORBIDDEN;
         }
 
         const branch = body?.branch || 'main';
         const commit = (body as { commit?: string })?.commit || '';
         const files = body?.files;
+
+        if (!(await isValidBranchName(branch))) {
+          return { status: 400, body: { error: 'Invalid branch name' } };
+        }
+        if (!isValidCommit(commit)) {
+          return { status: 400, body: { error: 'Invalid commit' } };
+        }
+        if (
+          files !== undefined &&
+          (!Array.isArray(files) ||
+            files.some((file) => typeof file !== 'string'))
+        ) {
+          return {
+            status: 400,
+            body: { error: 'Workflow files must be strings' }
+          };
+        }
 
         const runId = await queue.enqueue(params.name, branch, commit, files);
 
@@ -81,10 +97,12 @@ export function createWorkflowRoutes(
           return { status: 404, body: { error: 'Repository not found' } };
         }
 
-        // Only owner or admin can view workflow runs
-        const isOwner = repo.ownerTokenId === getTokenId(req);
-        const isAdmin = hasPermission(req, 'admin');
-        if (!isOwner && !isAdmin) {
+        if (
+          !(await hasRepoAccess(req, db, repo, {
+            permission: 'workflow:read',
+            allowCollaborator: true
+          }))
+        ) {
           return FORBIDDEN;
         }
 
@@ -130,9 +148,12 @@ export function createWorkflowRoutes(
         // Verify ownership for specific run access
         const repo = await db.getRepo(params.name);
         if (repo) {
-          const isOwner = repo.ownerTokenId === getTokenId(req);
-          const isAdmin = hasPermission(req, 'admin');
-          if (!isOwner && !isAdmin) {
+          if (
+            !(await hasRepoAccess(req, db, repo, {
+              permission: 'workflow:read',
+              allowCollaborator: true
+            }))
+          ) {
             return FORBIDDEN;
           }
         }
@@ -151,22 +172,26 @@ export function createWorkflowRoutes(
           return FORBIDDEN;
         }
 
-        // Admin sees all runs, regular users only see their own repos' runs
+        // Admin sees all runs, other tokens see runs for repos they can access.
         const isAdmin = hasPermission(req, 'admin');
-        const tokenId = getTokenId(req);
 
         let runs = await db.listWorkflowRuns();
 
-        // Filter to only repos owned by this token (unless admin)
-        if (!isAdmin && tokenId) {
-          const ownedRuns = [];
+        if (!isAdmin) {
+          const visibleRuns = [];
           for (const run of runs) {
             const repo = await db.getRepo(run.repoName);
-            if (repo?.ownerTokenId === tokenId) {
-              ownedRuns.push(run);
+            if (
+              repo &&
+              (await hasRepoAccess(req, db, repo, {
+                permission: 'workflow:read',
+                allowCollaborator: true
+              }))
+            ) {
+              visibleRuns.push(run);
             }
           }
-          runs = ownedRuns;
+          runs = visibleRuns;
         }
 
         // Group by status

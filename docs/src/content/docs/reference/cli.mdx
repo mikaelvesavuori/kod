@@ -1,0 +1,243 @@
+---
+title: CLI Reference
+description: Complete reference for all Kod CLI commands and flags.
+---
+
+## Global Options
+
+These flags can be placed before any command:
+
+```bash
+kod [global options] <command> [options]
+
+  -t, --token <token>    API token for authentication
+  -s, --server <url>     Server URL (default: http://localhost:3000)
+  -h, --help             Show help
+  -v, --version          Show version
+```
+
+## `kod init`
+
+Configure the CLI client interactively. Saves settings to `~/.kod/config.json`.
+
+```bash
+kod init
+```
+
+When prompted for the API token, enter the same token used with `--admin-token` when starting the server.
+
+If `git-credential-kod` is available on your `PATH` (installed automatically with `npm install -g kod`), `kod init` also configures Git to use it as a credential helper for the server host. This means plain `git clone`, `git push`, and `git pull` will authenticate automatically.
+
+## `git-credential-kod`
+
+A Git credential helper that reads your Kod token from `~/.kod/config.json` and provides it to Git automatically. Installed alongside the `kod` binary.
+
+You normally don't need to invoke this directly — `kod init` configures Git to use it. To set it up manually:
+
+```bash
+git config --global credential.http://localhost:3000.helper kod
+```
+
+## `kod serve`
+
+Start the Kod server.
+
+```bash
+kod serve [options]
+
+Options:
+  --port, -p <port>          Port to listen on (default: 3000)
+  --data-dir <path>          Data directory for database
+  --repos-dir <path>         Directory for Git repositories
+  --token <token>            Legacy bootstrap token alias
+  --admin-token <token>      Admin token for first-time setup
+  --encryption-key <key>     Encryption key for secrets
+  --ssh / --no-ssh           Enable or disable SSH Git access
+  --ssh-host <host>          SSH listen host (default: 0.0.0.0)
+  --ssh-port <port>          SSH listen port (default: 2222)
+  --ssh-host-key <path>      SSH host private key path
+  --ssh-anonymous-read       Allow anonymous read-only SSH clone/fetch/list
+```
+
+**Environment variables:**
+
+| Variable                 | Description                      |
+|--------------------------|----------------------------------|
+| `KOD_PORT`               | Port to listen on                |
+| `KOD_DATA_DIR`           | Data directory                   |
+| `KOD_REPOS_DIR`          | Repos directory                  |
+| `KOD_API_TOKEN`          | Legacy bootstrap token alias     |
+| `KOD_ADMIN_TOKEN`        | Admin token for first-time setup |
+| `KOD_ENCRYPTION_KEY`     | Encryption key for secrets       |
+| `KOD_SSH_ENABLED`        | Enable SSH server (true/false)   |
+| `KOD_SSH_HOST`           | SSH listen host                  |
+| `KOD_SSH_PORT`           | SSH listen port                  |
+| `KOD_SSH_HOST_KEY_PATH`  | SSH host private key path        |
+| `KOD_SSH_ANONYMOUS_READ` | Allow anonymous SSH read access  |
+
+## `kod clone`
+
+Clone a repository using your configured token.
+
+```bash
+kod clone <repo-name>
+kod clone <url>
+kod clone my-app --credentials kod_other_token
+```
+
+## `kod repo`
+
+Manage repositories.
+
+```bash
+kod repo list                          # List all repositories
+kod repo create <name>                 # Create a new repository
+kod repo import <source> [name]        # Import a local or remote Git repository
+kod repo <name> info                   # Show repository details
+kod repo update <name> name <new>      # Rename a repository
+kod repo delete <name>                 # Delete a repository
+kod repo <name> protected              # List protected branches
+kod repo <name> protect <branch>       # Protect a branch
+kod repo <name> unprotect <branch>     # Remove branch protection
+```
+
+### Collaborators
+
+```bash
+kod repo <name> collaborator list              # List collaborators
+kod repo <name> collaborator add <username>    # Add collaborator
+kod repo <name> collaborator remove <username> # Remove collaborator
+```
+
+### Webhooks
+
+```bash
+kod repo <name> webhook list
+kod repo <name> webhook add <url> [--events push,workflow] [--secret <secret>]
+kod repo <name> webhook deliveries <id>
+kod repo <name> webhook retry <id> <delivery-id>
+kod repo <name> webhook remove <id>
+```
+
+Webhook events are delivered as JSON with `X-Kod-Event` and `X-Kod-Delivery`. When a secret is configured, Kod also sends `X-Kod-Signature-256`. Failed deliveries are retried automatically and can be retried manually.
+
+## `kod keys`
+
+Manage SSH public keys for collaborator-linked tokens.
+
+```bash
+kod keys list
+kod keys add ~/.ssh/id_ed25519.pub [--name laptop]
+kod keys remove <id>
+```
+
+Admins can manage another collaborator's keys with `--username <user>`.
+
+## `kod doctor`
+
+Check local Git availability, client/server configuration, server health, and API authentication.
+
+```bash
+kod doctor
+```
+
+## `kod token`
+
+Manage API tokens (requires `admin` permission).
+
+```bash
+kod token list                         # List all tokens
+kod token create <name> [options]      # Create a new token
+kod token delete <id>                  # Delete a token
+```
+
+**Create options:**
+
+```bash
+--permissions <perms>   Comma-separated permissions (default: repo:read,repo:write,workflow:read)
+--expires <days>        Token expiration in days (1-365)
+--username <user>       Link token to a collaborator (for Git access)
+```
+
+**Examples:**
+
+```bash
+kod token create ci-deploy --permissions repo:read,workflow:trigger
+kod token create alice --username alice --permissions repo:read,repo:write
+kod token create temp --expires 30
+kod token create full-admin --permissions admin
+```
+
+## `kod workflow`
+
+Run workflows locally or check status.
+
+```bash
+kod workflow <file.toml> [file2.toml...]   # Run workflow(s) locally
+kod workflow status [repo]                 # Check workflow status
+kod workflow show <repo> <id>              # Show a run
+kod workflow trigger <repo> [--branch b]   # Trigger a remote run
+```
+
+**Examples:**
+
+```bash
+kod workflow build.toml
+kod workflow build.toml deploy.toml
+BRANCH=main kod workflow build.toml
+kod workflow status
+kod workflow status my-repo
+kod workflow show my-repo abc123
+kod workflow trigger my-repo --branch main
+```
+
+## `kod backup`
+
+Create a portable archive containing the configured data and repository directories.
+
+```bash
+kod backup
+kod backup --output kod-backup.tar.gz
+```
+
+## `kod restore`
+
+Restore a backup into the configured data and repository directories. Restore refuses to overwrite non-empty targets unless `--force` is provided.
+
+```bash
+kod restore kod-backup.tar.gz
+kod restore kod-backup.tar.gz --force
+```
+
+## `kod upgrade`
+
+Upgrade Kod to the latest version.
+
+```bash
+kod upgrade
+```
+
+## `kod uninstall`
+
+Remove Kod from your system. Deletes the binary (`~/.local/bin/kod`) and data directory (`~/.kod`). Prompts for confirmation before proceeding.
+
+```bash
+kod uninstall
+```
+
+## Permissions
+
+| Permission           | Description                        |
+|----------------------|------------------------------------|
+| `repo:read`          | Clone and fetch repositories       |
+| `repo:write`         | Push to repositories               |
+| `repo:delete`        | Delete repositories                |
+| `collaborator:read`  | List collaborators                 |
+| `collaborator:write` | Add/remove collaborators           |
+| `workflow:read`      | View workflow status and history   |
+| `workflow:trigger`   | Trigger workflows via API          |
+| `secrets:read`       | List secret names (no values)      |
+| `secrets:write`      | Create, update, and delete secrets |
+| `webhook:read`       | List repository webhooks           |
+| `webhook:write`      | Create and delete webhooks         |
+| `admin`              | Full access to all operations      |

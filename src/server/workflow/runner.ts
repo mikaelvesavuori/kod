@@ -1,5 +1,5 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve, relative, sep } from 'node:path';
 
 import type {
   WorkflowContext,
@@ -49,9 +49,22 @@ export async function runWorkflow(
     }
 
     // Determine working directory
-    const workingDir = step.working_dir
-      ? join(context.workingDir, step.working_dir)
-      : context.workingDir;
+    const workingDirResult = resolveInsideBase(
+      context.workingDir,
+      step.working_dir ?? '.'
+    );
+    if (!workingDirResult.ok) {
+      stepResults.push({
+        name: step.name,
+        success: false,
+        output: '',
+        error: workingDirResult.error,
+        duration: Date.now() - stepStart
+      });
+      success = false;
+      break;
+    }
+    const workingDir = workingDirResult.path;
 
     // Process run commands
     const commands = step.run.split('\n').filter((line) => line.trim());
@@ -76,9 +89,9 @@ export async function runWorkflow(
         env: context.env
       });
 
-      stepOutput += result.stdout;
+      stepOutput += redact(result.stdout, context.redactedValues);
       if (result.stderr) {
-        stepOutput += result.stderr;
+        stepOutput += redact(result.stderr, context.redactedValues);
       }
 
       if (result.exitCode !== 0) {
@@ -130,19 +143,32 @@ export async function runWorkflowFiles(
       ? file
       : join(context.workingDir, file);
 
-    if (!existsSync(filePath)) {
+    const safePath = resolveInsideBase(context.workingDir, filePath);
+    if (!safePath.ok) {
       allStepResults.push({
         name: `Load ${file}`,
         success: false,
         output: '',
-        error: `Workflow file not found: ${filePath}`,
+        error: safePath.error,
         duration: 0
       });
       overallSuccess = false;
       break;
     }
 
-    const content = readFileSync(filePath, 'utf-8');
+    if (!existsSync(safePath.path)) {
+      allStepResults.push({
+        name: `Load ${file}`,
+        success: false,
+        output: '',
+        error: `Workflow file not found: ${safePath.path}`,
+        duration: 0
+      });
+      overallSuccess = false;
+      break;
+    }
+
+    const content = readFileSync(safePath.path, 'utf-8');
     const result = await runWorkflow(content, context);
 
     allStepResults.push(...result.steps);
@@ -179,4 +205,37 @@ export function discoverWorkflows(repoWorkingDir: string): string[] {
   } catch {
     return [];
   }
+}
+
+function resolveInsideBase(
+  baseDir: string,
+  path: string
+): { ok: true; path: string } | { ok: false; error: string } {
+  const base = resolve(baseDir);
+  const target = resolve(base, path);
+  const rel = relative(base, target);
+
+  if (
+    rel === '..' ||
+    rel.startsWith(`..${sep}`) ||
+    resolve(target) !== target
+  ) {
+    return {
+      ok: false,
+      error: `Path must stay inside the repository: ${path}`
+    };
+  }
+
+  return { ok: true, path: target };
+}
+
+function redact(output: string, values: string[] | undefined): string {
+  if (!values || values.length === 0 || output.length === 0) return output;
+
+  let redacted = output;
+  for (const value of values) {
+    if (!value) continue;
+    redacted = redacted.split(value).join('[secret]');
+  }
+  return redacted;
 }

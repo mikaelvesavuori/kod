@@ -1,0 +1,169 @@
+# Kod — The minimalist self-hosted Git tool that keeps you shipping.
+
+## Project Title
+Kod
+
+## Short Description
+Kod is a minimal, performance-oriented, self-hosted Git platform. It provides remote Git repositories and plain-file workflows with no dashboards, no databases, and no bloat. A single ~70KB binary that works as both server and CLI.
+
+## Vision Statement
+Kod is built for developers who want to ship fast. It provides Git repositories and sequential workflows on your own servers — no SaaS dependency, no vendor lock-in, no platform tax. Your code never leaves your server. There are no analytics, no telemetry, no phone-home behavior.
+
+## Key Concept
+Kod is a self-hosted Git platform that focuses exclusively on two things: remote Git repositories (over HTTP) and plain-file TOML workflows that run on push or via the API. It supports branches but is optimized for trunk-based development.
+
+---
+
+## Core Features
+
+### Remote Git Repositories
+- Create, push, delete, and clone over HTTP
+- No UI layers, no magic abstractions
+- Supports branches, optimized for trunk-based development
+
+### Plain-File Workflows
+- Readable TOML-style files that execute steps in order
+- Workflows run on push and also run locally with the same files
+- Can be triggered manually via the API
+- Sequential execution with optional conditions and error handling
+
+### Lean Collaboration
+- Add and remove collaborators with granular token permissions
+- Scoped to repos, workflows, and secrets, with built-in expiration
+- Fine-grained access control
+
+### Encrypted Secrets
+- AES-256-GCM encryption at rest
+- Secrets are injected into workflows at runtime
+- Never exposed via API or logs
+
+### Zero Platform Tax
+- No dashboards, no databases, no background services
+- One ~70KB binary that works as both server and CLI
+- Node.js only dependency — no containers, message queues, or external services
+
+---
+
+## Installation
+
+### One-Line Install
+curl -sSL https://releases.itskod.com/install.sh | bash
+
+Requires macOS or Linux with Node.js 24 or later.
+
+### Getting Started
+```
+# Start server
+kod serve --admin-token kod_my_secret
+
+# Configure CLI (enter the same token when prompted)
+kod init
+
+# Create repo, clone, push
+kod repo create my-app
+kod clone my-app
+cd my-app && echo "Welcome to Kod!" >> welcome.txt
+git add . && git commit -m "feat: use kod" && git push origin main
+```
+
+---
+
+## Workflow Example
+```toml
+# Run it with: kod workflow demo.toml
+
+timeout: 120
+
+[step:test]
+run: npm test
+continue_on_error: true
+
+[step:build]
+run:
+  echo "Start the build..."
+  npm run build
+
+[step:deploy]
+if: "branch == 'main'"
+  run: ./deploy.sh
+```
+
+---
+
+## Licensing
+
+Kod is free for any use case, private or commercial. No per-seat pricing, no feature gates. It is open source under the MIT License.
+
+---
+
+## How Kod Compares
+
+| | Kod | GitHub | GitLab SaaS | GitLab Self-hosted | Gitea / Forgejo | Jenkins |
+|---|---|---|---|---|---|---|
+| Typical cost | Free + minimal infra | Free → $21/user/mo | Free → $99/user/mo | Free (CE) or licensed + high infra | Free + medium infra | Free + high infra |
+| Hardware | ~70KB binary, anything Linux | N/A (SaaS) | N/A (SaaS) | 8+ cores, 16GB+ RAM | 1 core, 512MB+ RAM | 2+ cores, 256MB+ RAM |
+| Time to value | Minutes | Minutes (signup) | Minutes (signup) | Hours to days | ~30 minutes | Hours |
+| Product complexity | Minimal | Medium | High | High | Low | High |
+| Maintenance | Near zero | None (managed) | None (managed) | High | Low | High |
+| Git hosting | Yes | Yes | Yes | Yes | Yes | No |
+| CI/CD | Sequential workflows | GitHub Actions | GitLab CI | GitLab CI | Gitea Actions | Pipelines |
+| Pull requests | No | Yes | Yes | Yes | Yes | No |
+| Project management | No | Yes | Yes | Yes | Yes | No |
+| Data sovereignty | Full | None (US-hosted) | Limited | Full | Full | Full |
+| Dependencies | Node.js only | N/A | N/A | PostgreSQL, Redis, etc. | Optional DB | Java, plugins |
+| Can run locally | Fully; part of its design | No | No | Partly | Yes | Partly |
+
+---
+
+## FAQ
+
+**Is this competing with GitHub or GitLab?**
+No, not really. Kod does Git repositories and workflows. Nothing else.
+
+**Can I use branches?**
+Yes. Kod supports branches, though the workflow is optimized for trunk-based development.
+
+**How about pull requests or code review?**
+Not built in. Use other tools if you need them.
+
+**Can workflows run locally?**
+Yes. The same workflow files run on your machine.
+
+**What are the system requirements?**
+Node.js 24+ on Linux or macOS. No databases, containers, or external services needed.
+
+**How are secrets handled?**
+Encrypted at rest with AES-256-GCM. Injected into the workflow process environment at runtime. Never exposed through the API or written to logs.
+
+**Can I have multiple users?**
+Yes. Create tokens with fine-grained permissions and add per-repository collaborators.
+
+**Can I trigger workflows manually?**
+Yes, via the API. You don't have to push to run a workflow.
+
+**How do I run Kod in production?**
+Use systemd, Docker, or put it behind a reverse proxy like Caddy or nginx for HTTPS.
+
+**Why is this free and open source?**
+Kod is a small project and critical enough to warrant making as easy as possible to use, fork, inspect, and self-host. With sovereignty discussions ongoing, offering a minimalist way to securely work with Git repositories is The Right Thing To Do.
+
+**What license does Kod use?**
+Kod is released under the MIT License. Use it, self-host it, fork it, adapt it, and share improvements. Use GitHub issues for bugs, ideas, and improvements.
+
+---
+
+## Documentation & Resources
+- Documentation: https://itskod.com/docs/
+- Issues: https://github.com/mikaelvesavuori/kod/issues
+- Comparison: https://itskod.com/comparison.html
+- Privacy Policy: https://itskod.com/privacy.html
+- MIT License: https://itskod.com/agreement.html
+- Subprocessors: https://itskod.com/subprocessors.html
+
+---
+
+## Credits
+Kod is developed by Mikael Vesavuori.
+Made in Göteborg, Sweden.
+
+Website: https://itskod.com

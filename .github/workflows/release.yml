@@ -72,11 +72,6 @@ jobs:
         run: |
           wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/install.sh --file=install.sh --jurisdiction=eu --remote
           wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/upgrade.sh --file=upgrade.sh --jurisdiction=eu --remote
+          wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/VERSION --file=kod/VERSION --jurisdiction=eu --remote --cache-control="no-cache"
           wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/kod_${VERSION}.zip --file=kod_${VERSION}.zip --jurisdiction=eu --remote
           wrangler r2 object put ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/kod_latest.zip --file=kod_latest.zip --jurisdiction=eu --remote --cache-control="no-cache"
-
-      - name: Notify backoffice API
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          curl -X POST https://api.itskod.com/version?version=${VERSION} -H "Authorization: ${{ secrets.KOD_BACKOFFICE_API_KEY }}"

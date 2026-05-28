@@ -1,6 +1,12 @@
 coverage/
 node_modules/
 dist/
+docs/.astro/
+docs/dist/
+docs/node_modules/
+site/.build-temp/
+site/dist/
+site/node_modules/
 lib/
 .DS_Store
 package-lock.json

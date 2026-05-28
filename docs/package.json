@@ -1,0 +1,37 @@
+{
+  "name": "kod-docs",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "The public documentation site for Kod.",
+  "author": "Kod",
+  "license": "MIT",
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikaelvesavuori/kod"
+  },
+  "bugs": {
+    "url": "https://github.com/mikaelvesavuori/kod/issues"
+  },
+  "homepage": "https://github.com/mikaelvesavuori/kod/tree/main/docs",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "lint": "npm run lint:md",
+    "lint:code": "npx @biomejs/biome check --write .",
+    "lint:md": "npx markdownlint-cli2 --fix \"**/*.md\" \"#node_modules\"",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "latest",
+    "@astrojs/starlight": "latest",
+    "@biomejs/biome": "2",
+    "astro": "6",
+    "markdownlint": "0",
+    "markdownlint-cli2": "0",
+    "typescript": "6"
+  }
+}

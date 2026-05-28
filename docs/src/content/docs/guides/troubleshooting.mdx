@@ -1,0 +1,109 @@
+---
+title: Troubleshooting
+description: Use kod doctor and focused checks to debug local and server setup issues.
+---
+
+Kod includes `kod doctor` for quick local diagnostics:
+
+```bash
+kod doctor
+```
+
+The command checks:
+
+- Git availability
+- Client configuration from `~/.kod/config.json`
+- Data directory access
+- Repository directory access
+- SSH server configuration
+- HTTP server health
+- API token authentication
+
+If any check fails, `kod doctor` exits with a non-zero status.
+
+## Common Fixes
+
+### Git Is Missing
+
+Install Git and confirm it is on your `PATH`:
+
+```bash
+git --version
+```
+
+### Client Config Is Missing
+
+Run `kod init` and enter the server URL and token:
+
+```bash
+kod init
+```
+
+You can also override the client configuration for one command:
+
+```bash
+kod --server https://git.example.com --token kod_your_token repo list
+```
+
+### Server Is Unreachable
+
+Check that the Kod server is running:
+
+```bash
+curl http://localhost:3000/health
+```
+
+For production, verify your reverse proxy forwards to the HTTP port configured with `KOD_PORT` or `--port`.
+
+### Token Is Rejected
+
+Create a new token or check that the existing token has the permissions required for the command:
+
+```bash
+kod token create alice --username alice --permissions repo:read,repo:write
+```
+
+For collaborator Git access, the token must have a username and that username must be added to the repository.
+
+### Data or Repository Directory Is Not Writable
+
+Check ownership and permissions for the configured directories:
+
+```bash
+ls -ld ~/.kod/data ~/.kod/repos
+```
+
+For systemd deployments, make sure the `User=` in the service can read and write the configured paths.
+
+### SSH Clone Fails
+
+Confirm the server has SSH enabled and that the client uses the right port:
+
+```bash
+kod serve --ssh --ssh-port 2222
+git clone ssh://kod@git.example.com:2222/my-app.git
+```
+
+Then verify the collaborator setup:
+
+```bash
+kod repo my-app collaborator list
+kod keys list
+```
+
+The SSH key must belong to a username that owns the repository or is listed as a collaborator. Anonymous SSH uses the `anonymous` username and is read-only.
+
+### Webhook Delivery Fails
+
+Inspect delivery history:
+
+```bash
+kod repo my-app webhook deliveries <webhook-id>
+```
+
+Look at the response status, error, attempt count, and next retry timestamp. After fixing the receiver, retry a failed delivery:
+
+```bash
+kod repo my-app webhook retry <webhook-id> <delivery-id>
+```
+

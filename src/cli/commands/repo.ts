@@ -10,6 +10,34 @@ interface RepoInfo extends Repo {
   defaultBranch: string | null;
 }
 
+interface BranchProtectionResponse {
+  branches: string[];
+}
+
+interface WebhookInfo {
+  id: string;
+  repoName: string;
+  url: string;
+  events: string[];
+  createdAt: number;
+}
+
+interface WebhookDeliveryInfo {
+  id: string;
+  webhookId: string;
+  repoName: string;
+  event: string;
+  url: string;
+  status: string;
+  attempts: number;
+  maxAttempts: number;
+  createdAt: number;
+  lastAttemptAt?: number;
+  nextAttemptAt?: number;
+  responseStatus?: number;
+  error?: string;
+}
+
 export async function listRepos(): Promise<void> {
   const response = await api.get<Repo[]>('/repos');
 
@@ -62,6 +90,27 @@ export async function createRepo(name: string): Promise<void> {
   console.log(`  git remote add origin ${buildRepoUrl(repo.name)}`);
 }
 
+export async function importRepo(source: string, name?: string): Promise<void> {
+  if (!source) {
+    console.error('Error: Repository source is required');
+    console.error('Usage: kod repo import <source> [name]');
+    process.exit(1);
+  }
+
+  const response = await api.post<Repo>('/repos/import', { source, name });
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  const repo = response.data!;
+  console.log(`Repository '${repo.name}' imported successfully.`);
+  console.log();
+  console.log('Clone with:');
+  console.log(`  kod clone ${repo.name}`);
+}
+
 export async function getRepoInfo(name: string): Promise<void> {
   if (!name) {
     console.error('Error: Repository name is required');
@@ -102,6 +151,14 @@ export async function getRepoInfo(name: string): Promise<void> {
     }
   } else {
     console.log('Collaborators: (none)');
+  }
+
+  if ((repo.protectedBranches ?? []).length > 0) {
+    console.log();
+    console.log('Protected branches:');
+    for (const branch of repo.protectedBranches ?? []) {
+      console.log(`  ${branch}`);
+    }
   }
 }
 
@@ -150,4 +207,206 @@ export async function deleteRepo(name: string): Promise<void> {
   }
 
   console.log(`Repository '${name}' deleted.`);
+}
+
+export async function listProtectedBranches(name: string): Promise<void> {
+  const response = await api.get<BranchProtectionResponse>(
+    `/repos/${name}/protections/branches`
+  );
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  const branches = response.data?.branches ?? [];
+  if (branches.length === 0) {
+    console.log('No protected branches.');
+    return;
+  }
+
+  console.log('Protected branches:\n');
+  for (const branch of branches) {
+    console.log(`  ${branch}`);
+  }
+}
+
+export async function protectBranch(
+  name: string,
+  branch: string
+): Promise<void> {
+  if (!branch) {
+    console.error('Usage: kod repo <name> protect <branch>');
+    process.exit(1);
+  }
+
+  const response = await api.put<BranchProtectionResponse>(
+    `/repos/${name}/protections/branches/${encodeURIComponent(branch)}`
+  );
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  console.log(`Branch '${branch}' protected.`);
+}
+
+export async function unprotectBranch(
+  name: string,
+  branch: string
+): Promise<void> {
+  if (!branch) {
+    console.error('Usage: kod repo <name> unprotect <branch>');
+    process.exit(1);
+  }
+
+  const response = await api.delete<BranchProtectionResponse>(
+    `/repos/${name}/protections/branches/${encodeURIComponent(branch)}`
+  );
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  console.log(`Branch '${branch}' unprotected.`);
+}
+
+export async function listWebhooks(name: string): Promise<void> {
+  const response = await api.get<WebhookInfo[]>(`/repos/${name}/webhooks`);
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  const webhooks = response.data ?? [];
+  if (webhooks.length === 0) {
+    console.log('No webhooks configured.');
+    return;
+  }
+
+  console.log('Webhooks:\n');
+  for (const webhook of webhooks) {
+    console.log(`  ${webhook.id}`);
+    console.log(`    URL: ${webhook.url}`);
+    console.log(`    Events: ${webhook.events.join(', ')}`);
+    console.log(`    Created: ${new Date(webhook.createdAt).toLocaleString()}`);
+    console.log();
+  }
+}
+
+export async function addWebhook(
+  name: string,
+  url: string,
+  events: string[],
+  secret?: string
+): Promise<void> {
+  if (!url) {
+    console.error(
+      'Usage: kod repo <name> webhook add <url> [--events push,workflow] [--secret <secret>]'
+    );
+    process.exit(1);
+  }
+
+  const response = await api.post<WebhookInfo>(`/repos/${name}/webhooks`, {
+    url,
+    events: events.length > 0 ? events : undefined,
+    secret
+  });
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  console.log(`Webhook ${response.data?.id} added.`);
+}
+
+export async function removeWebhook(name: string, id: string): Promise<void> {
+  if (!id) {
+    console.error('Usage: kod repo <name> webhook remove <id>');
+    process.exit(1);
+  }
+
+  const response = await api.delete(`/repos/${name}/webhooks/${id}`);
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  console.log(`Webhook ${id} removed.`);
+}
+
+export async function listWebhookDeliveries(
+  name: string,
+  id: string
+): Promise<void> {
+  if (!id) {
+    console.error('Usage: kod repo <name> webhook deliveries <id>');
+    process.exit(1);
+  }
+
+  const response = await api.get<WebhookDeliveryInfo[]>(
+    `/repos/${name}/webhooks/${id}/deliveries`
+  );
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  const deliveries = response.data ?? [];
+  if (deliveries.length === 0) {
+    console.log('No webhook deliveries found.');
+    return;
+  }
+
+  console.log('Webhook deliveries:\n');
+  for (const delivery of deliveries) {
+    console.log(`  ${delivery.id}`);
+    console.log(`    Event: ${delivery.event}`);
+    console.log(`    Status: ${delivery.status}`);
+    console.log(`    Attempts: ${delivery.attempts}/${delivery.maxAttempts}`);
+    if (delivery.responseStatus) {
+      console.log(`    Response: HTTP ${delivery.responseStatus}`);
+    }
+    if (delivery.error) {
+      console.log(`    Error: ${delivery.error}`);
+    }
+    if (delivery.nextAttemptAt) {
+      console.log(
+        `    Next retry: ${new Date(delivery.nextAttemptAt).toLocaleString()}`
+      );
+    }
+    console.log(
+      `    Created: ${new Date(delivery.createdAt).toLocaleString()}`
+    );
+    console.log();
+  }
+}
+
+export async function retryWebhookDelivery(
+  name: string,
+  id: string,
+  deliveryId: string
+): Promise<void> {
+  if (!id || !deliveryId) {
+    console.error('Usage: kod repo <name> webhook retry <id> <delivery-id>');
+    process.exit(1);
+  }
+
+  const response = await api.post<WebhookDeliveryInfo>(
+    `/repos/${name}/webhooks/${id}/deliveries/${deliveryId}/retry`
+  );
+
+  if (!response.ok) {
+    console.error(`Error: ${response.error}`);
+    process.exit(1);
+  }
+
+  console.log(`Webhook delivery ${deliveryId} retried.`);
+  console.log(`Status: ${response.data?.status}`);
 }

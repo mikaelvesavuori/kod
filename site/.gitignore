@@ -1,0 +1,19 @@
+# Files
+.dccache
+.DS_Store
+.env
+*.tgz
+*.zip
+
+# Folders
+.build-temp/
+.temp_coverage/
+build/
+coverage/
+dist/
+docs/
+generated/
+lib/
+node_modules/
+test/
+.claude/

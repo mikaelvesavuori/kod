@@ -5,6 +5,7 @@ export interface Repo {
   createdAt: number;
   path: string;
   ownerTokenId: string; // Token ID that created this repo
+  protectedBranches?: string[]; // Branches writable only by owner/admin
 }
 
 export interface Collaborator {
@@ -38,6 +39,7 @@ export interface WorkflowContext {
   branch: string;
   repo: string;
   workingDir: string;
+  redactedValues?: string[];
 }
 
 export interface StepResult {
@@ -79,6 +81,11 @@ export interface ServerConfig {
   apiToken: string;
   adminToken: string;
   encryptionKey: string;
+  sshEnabled: boolean;
+  sshHost: string;
+  sshPort: number;
+  sshHostKeyPath: string;
+  sshAnonymousRead: boolean;
 }
 
 // HTTP types
@@ -110,6 +117,11 @@ export interface HttpResponse {
 
 export interface CreateRepoRequest {
   name: string;
+}
+
+export interface ImportRepoRequest {
+  source: string;
+  name?: string;
 }
 
 export interface UpdateRepoRequest {
@@ -156,6 +168,8 @@ export type TokenPermission =
   | 'workflow:trigger'
   | 'secrets:read'
   | 'secrets:write'
+  | 'webhook:read'
+  | 'webhook:write'
   | 'admin';
 
 export interface RepoSecret {
@@ -164,4 +178,44 @@ export interface RepoSecret {
   encryptedValue: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export type WebhookEvent = 'push' | 'workflow';
+
+export interface RepoWebhook {
+  id: string;
+  repoName: string;
+  url: string;
+  events: WebhookEvent[];
+  secret?: string;
+  createdAt: number;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhookId: string;
+  repoName: string;
+  event: WebhookEvent;
+  url: string;
+  payload: Record<string, unknown>;
+  status: 'pending' | 'success' | 'failed';
+  attempts: number;
+  maxAttempts: number;
+  createdAt: number;
+  lastAttemptAt?: number;
+  nextAttemptAt?: number;
+  responseStatus?: number;
+  error?: string;
+}
+
+export interface SshPublicKey {
+  id: string;
+  username: string;
+  name: string;
+  publicKey: string;
+  keyType: string;
+  keyData: string;
+  fingerprint: string;
+  createdAt: number;
+  lastUsedAt?: number;
 }

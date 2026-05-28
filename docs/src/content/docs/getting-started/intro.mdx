@@ -1,0 +1,67 @@
+---
+title: What is Kod?
+description: An introduction to Kod, the minimalist self-hosted Git platform.
+---
+
+Kod is a minimalist, self-hosted Git repository management system with built-in workflow automation. It provides the essential Git hosting primitives you need, packaged into a single portable binary with zero external dependencies.
+
+## The Core Concept
+
+Kod gives you a private Git server with CI-like workflows, token-based access control, collaborator SSH keys, webhook delivery tracking, and encrypted secrets -- all in a single portable service. No database servers, no container runtimes, no external services required.
+
+## What's Included
+
+- **Git Hosting**: HTTP Git with token authentication and SSH Git with collaborator public keys
+- **Workflow Automation**: TOML-based workflows that run on push, with branch conditions and environment variable support
+- **Access Control**: Fine-grained token permissions and per-repository collaborators
+- **Secrets Management**: Encrypted per-repository secrets injected into workflow environments
+- **Webhook Delivery**: Push/workflow webhooks with signatures, history, and retries
+- **Persistent Storage**: Built-in key-value database (PikoDB) with atomic writes
+
+## Key Characteristics
+
+### Single Binary
+
+Kod is distributed as a single JavaScript file. No build step, no Docker, no infrastructure -- just run it.
+
+### Dual Mode
+
+The same binary works as both the **server** (`kod serve`) and the **CLI client** (`kod repo list`, `kod workflow`, etc.).
+
+### Minimal Dependencies
+
+Kod has one bundled dependency (PikoDB for storage; also developed by Mikael Vesavuori, maker of Kod). No Redis, no PostgreSQL, no message queues. Data is stored in simple binary files on disk.
+
+### Self-Hosted
+
+Run Kod on your own hardware -- a VPS, a Raspberry Pi, or your laptop. No external services are contacted. Your code stays where you put it.
+
+## Who Is Kod For?
+
+- **Solo developers** who want a private Git server without the overhead of GitLab or Gitea
+- **Small teams** who need basic CI/CD without configuring Jenkins or GitHub Actions
+- **Edge and constrained environments** where a full Git platform is too heavy
+- **Privacy-conscious projects** that need to keep source code off third-party platforms
+
+## Getting Started
+
+Install Kod and have a working Git server in under a minute:
+
+```bash
+# Install
+curl -sSL https://releases.itskod.com/install.sh | bash
+
+# Start server
+kod serve --admin-token kod_my_secret
+
+# Configure CLI (enter the same token when prompted)
+kod init
+
+# Create repo, clone, push
+kod repo create my-app
+kod clone my-app
+cd my-app && echo "Welcome to Kod!" >> welcome.txt
+git add . && git commit -m "feat: use kod" && git push origin main
+```
+
+See the [Installation & Quickstart](/getting-started/installation-quickstart) guide for the full walkthrough.

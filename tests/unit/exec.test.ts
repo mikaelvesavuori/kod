@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 
-import { exec } from '../../src/shared/exec.js';
+import { exec, execFile } from '../../src/shared/exec.js';
 
 describe('Exec', () => {
   test('It should execute a simple command', async () => {
@@ -67,5 +67,16 @@ describe('Exec', () => {
     const result = await exec('nonexistent-command-12345');
 
     expect(result.exitCode).not.toBe(0);
+  });
+
+  test('It should execute a file with arguments without a shell', async () => {
+    const result = await execFile('node', [
+      '-e',
+      'console.log(process.argv[1])',
+      'hello; echo injected'
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('hello; echo injected');
   });
 });

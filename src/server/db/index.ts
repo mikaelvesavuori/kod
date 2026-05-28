@@ -1,3 +1,5 @@
+import { randomInt } from 'node:crypto';
+
 import { hashToken, encrypt, decrypt } from '../../shared/crypto.js';
 import type {
   Repo,
@@ -5,7 +7,11 @@ import type {
   RepoCollaborators,
   WorkflowRun,
   ApiToken,
-  RepoSecret
+  RepoSecret,
+  RepoWebhook,
+  WebhookEvent,
+  WebhookDelivery,
+  SshPublicKey
 } from '../../shared/types.js';
 
 import { Store } from './Store.js';
@@ -16,6 +22,9 @@ const REPO_COLLABORATORS_TABLE = 'repo_collaborators';
 const WORKFLOW_RUNS_TABLE = 'workflow_runs';
 const API_TOKENS_TABLE = 'api_tokens';
 const SECRETS_TABLE = 'secrets';
+const WEBHOOKS_TABLE = 'webhooks';
+const WEBHOOK_DELIVERIES_TABLE = 'webhook_deliveries';
+const SSH_KEYS_TABLE = 'ssh_keys';
 
 export class Database {
   private store: Store;
@@ -27,7 +36,10 @@ export class Database {
   // Repo operations
 
   async createRepo(repo: Repo): Promise<void> {
-    await this.store.write(REPOS_TABLE, repo.name, repo);
+    await this.store.write(REPOS_TABLE, repo.name, {
+      ...repo,
+      protectedBranches: repo.protectedBranches ?? []
+    });
     // Initialize empty collaborators list
     await this.store.write(REPO_COLLABORATORS_TABLE, repo.name, {
       repoName: repo.name,
@@ -72,6 +84,10 @@ export class Database {
   async deleteRepo(name: string): Promise<void> {
     await this.store.delete(REPOS_TABLE, name);
     await this.store.delete(REPO_COLLABORATORS_TABLE, name);
+    const webhooks = await this.listRepoWebhooks(name);
+    for (const webhook of webhooks) {
+      await this.deleteRepoWebhook(name, webhook.id);
+    }
   }
 
   // Collaborator operations
@@ -99,6 +115,10 @@ export class Database {
 
   async deleteCollaborator(username: string): Promise<void> {
     await this.store.delete(COLLABORATORS_TABLE, username);
+    const keys = await this.listSshKeys(username);
+    for (const key of keys) {
+      await this.deleteSshKey(key.id);
+    }
   }
 
   // Repo-Collaborator relationships
@@ -133,7 +153,7 @@ export class Database {
     if (!existing) return;
 
     existing.collaborators = existing.collaborators.filter(
-      (c: any) => c !== username
+      (collaborator) => collaborator !== username
     );
     await this.store.write(REPO_COLLABORATORS_TABLE, repoName, existing);
   }
@@ -278,6 +298,12 @@ export class Database {
     return tokens.map(({ tokenHash: _, ...rest }) => rest);
   }
 
+  async getApiTokenById(id: string): Promise<ApiToken | undefined> {
+    return this.store.get<ApiToken>(API_TOKENS_TABLE, id) as Promise<
+      ApiToken | undefined
+    >;
+  }
+
   /**
    * Delete an API token by ID.
    */
@@ -379,11 +405,190 @@ export class Database {
     return secrets;
   }
 
+  // Webhook operations
+
+  async createRepoWebhook(
+    repoName: string,
+    url: string,
+    events: WebhookEvent[] = ['push'],
+    secret?: string
+  ): Promise<RepoWebhook> {
+    const webhook: RepoWebhook = {
+      id: this.generateId(),
+      repoName,
+      url,
+      events,
+      secret,
+      createdAt: Date.now()
+    };
+
+    await this.store.write(
+      WEBHOOKS_TABLE,
+      `${repoName}:${webhook.id}`,
+      webhook
+    );
+    return webhook;
+  }
+
+  async listRepoWebhooks(repoName: string): Promise<RepoWebhook[]> {
+    const all = (await this.store.get<RepoWebhook>(
+      WEBHOOKS_TABLE
+    )) as RepoWebhook[];
+    if (!all) return [];
+
+    return all.filter((webhook) => webhook.repoName === repoName);
+  }
+
+  async getRepoWebhook(
+    repoName: string,
+    id: string
+  ): Promise<RepoWebhook | undefined> {
+    return this.store.get<RepoWebhook>(
+      WEBHOOKS_TABLE,
+      `${repoName}:${id}`
+    ) as Promise<RepoWebhook | undefined>;
+  }
+
+  async deleteRepoWebhook(repoName: string, id: string): Promise<void> {
+    await this.store.delete(WEBHOOKS_TABLE, `${repoName}:${id}`);
+    const deliveries = await this.listWebhookDeliveries(repoName, id);
+    for (const delivery of deliveries) {
+      await this.deleteWebhookDelivery(delivery.id);
+    }
+  }
+
+  // Webhook delivery operations
+
+  async createWebhookDelivery(
+    delivery: Omit<WebhookDelivery, 'id' | 'createdAt' | 'attempts' | 'status'>
+  ): Promise<WebhookDelivery> {
+    const record: WebhookDelivery = {
+      ...delivery,
+      id: this.generateId(),
+      status: 'pending',
+      attempts: 0,
+      createdAt: Date.now()
+    };
+
+    await this.store.write(WEBHOOK_DELIVERIES_TABLE, record.id, record);
+    return record;
+  }
+
+  async getWebhookDelivery(id: string): Promise<WebhookDelivery | undefined> {
+    return this.store.get<WebhookDelivery>(
+      WEBHOOK_DELIVERIES_TABLE,
+      id
+    ) as Promise<WebhookDelivery | undefined>;
+  }
+
+  async updateWebhookDelivery(
+    id: string,
+    updates: Partial<WebhookDelivery>
+  ): Promise<void> {
+    const existing = await this.getWebhookDelivery(id);
+    if (!existing) return;
+
+    await this.store.write(WEBHOOK_DELIVERIES_TABLE, id, {
+      ...existing,
+      ...updates
+    });
+  }
+
+  async listWebhookDeliveries(
+    repoName: string,
+    webhookId?: string
+  ): Promise<WebhookDelivery[]> {
+    const all = (await this.store.get<WebhookDelivery>(
+      WEBHOOK_DELIVERIES_TABLE
+    )) as WebhookDelivery[];
+    if (!all) return [];
+
+    return all
+      .filter(
+        (delivery) =>
+          delivery.repoName === repoName &&
+          (!webhookId || delivery.webhookId === webhookId)
+      )
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  async listDueWebhookDeliveries(now = Date.now()): Promise<WebhookDelivery[]> {
+    const all = (await this.store.get<WebhookDelivery>(
+      WEBHOOK_DELIVERIES_TABLE
+    )) as WebhookDelivery[];
+    if (!all) return [];
+
+    return all.filter(
+      (delivery) =>
+        delivery.status === 'pending' &&
+        (delivery.nextAttemptAt ?? delivery.createdAt) <= now
+    );
+  }
+
+  async deleteWebhookDelivery(id: string): Promise<void> {
+    await this.store.delete(WEBHOOK_DELIVERIES_TABLE, id);
+  }
+
+  // SSH key operations
+
+  async createSshKey(
+    key: Omit<SshPublicKey, 'id' | 'createdAt'>
+  ): Promise<SshPublicKey> {
+    const record: SshPublicKey = {
+      ...key,
+      id: this.generateId(),
+      createdAt: Date.now()
+    };
+
+    await this.store.write(SSH_KEYS_TABLE, record.id, record);
+    return record;
+  }
+
+  async getSshKey(id: string): Promise<SshPublicKey | undefined> {
+    return this.store.get<SshPublicKey>(SSH_KEYS_TABLE, id) as Promise<
+      SshPublicKey | undefined
+    >;
+  }
+
+  async listSshKeys(username?: string): Promise<SshPublicKey[]> {
+    const keys = (await this.store.get<SshPublicKey>(
+      SSH_KEYS_TABLE
+    )) as SshPublicKey[];
+    if (!keys) return [];
+
+    return keys
+      .filter((key) => !username || key.username === username)
+      .sort((a, b) => a.createdAt - b.createdAt);
+  }
+
+  async findSshKeyByData(
+    keyType: string,
+    keyData: string
+  ): Promise<SshPublicKey | undefined> {
+    const keys = await this.listSshKeys();
+    return keys.find(
+      (key) => key.keyType === keyType && key.keyData === keyData
+    );
+  }
+
+  async touchSshKey(id: string): Promise<void> {
+    const existing = await this.getSshKey(id);
+    if (!existing) return;
+    await this.store.write(SSH_KEYS_TABLE, id, {
+      ...existing,
+      lastUsedAt: Date.now()
+    });
+  }
+
+  async deleteSshKey(id: string): Promise<void> {
+    await this.store.delete(SSH_KEYS_TABLE, id);
+  }
+
   private generateId(): string {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let id = '';
     for (let i = 0; i < 12; i++) {
-      id += chars.charAt(Math.floor(Math.random() * chars.length));
+      id += chars.charAt(randomInt(chars.length));
     }
     return id;
   }
@@ -393,7 +598,7 @@ export class Database {
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let token = 'kod_';
     for (let i = 0; i < 32; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
+      token += chars.charAt(randomInt(chars.length));
     }
     return token;
   }

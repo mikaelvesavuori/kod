@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 
 import {
   getCurrentVersion,
+  getLatestVersion,
   isUpgradeNeeded,
   getInstallDir,
   getBinDir
@@ -70,6 +71,36 @@ describe('Upgrade', () => {
 
     test('It should return true when downgrading (versions differ)', () => {
       expect(isUpgradeNeeded('2.0.0', '1.0.0')).toBe(true);
+    });
+  });
+
+  describe('getLatestVersion', () => {
+    test('It should read the latest version from a static text file', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = async () =>
+        new Response('1.2.3\n', { status: 200 }) as Response;
+
+      try {
+        await expect(getLatestVersion('https://example.com/VERSION')).resolves.toBe(
+          '1.2.3'
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    test('It should return null when the static version file is unavailable', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = async () =>
+        new Response('', { status: 404 }) as Response;
+
+      try {
+        await expect(
+          getLatestVersion('https://example.com/VERSION')
+        ).resolves.toBeNull();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     });
   });
 

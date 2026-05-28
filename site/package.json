@@ -1,0 +1,34 @@
+{
+  "name": "kod-marketing-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "The public marketing site for Kod",
+  "author": "Kod",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikaelvesavuori/kod"
+  },
+  "bugs": {
+    "url": "https://github.com/mikaelvesavuori/kod/issues"
+  },
+  "homepage": "https://itskod.com",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "node dev-server.js",
+    "build": "bash build.sh",
+    "minify:html": "html-minifier-next --collapse-whitespace --output-dir=dist --file-ext=html",
+    "minify:css": "lightningcss --minify src/styles/styles.css -o dist/styles/styles.css",
+    "minify:js": "for file in src/code/*.js; do esbuild \"$file\" --bundle --minify --target=es2024 --outfile=\"dist/code/$(basename \"$file\")\"; done",
+    "lint:css": "stylelint src/styles/styles.css --fix"
+  },
+  "devDependencies": {
+    "esbuild": "latest",
+    "html-minifier-next": "latest",
+    "lightningcss-cli": "latest",
+    "stylelint": "latest",
+    "stylelint-config-standard": "latest",
+    "ws": "latest"
+  }
+}

@@ -30,6 +30,7 @@ BIN_DIR="$HOME/.local/bin"
 INSTALL_DIR="$HOME/.kod"
 VERSION_FILE="$INSTALL_DIR/VERSION"
 RELEASE_BASE_URL="https://releases.itskod.com"
+VERSION_URL="$RELEASE_BASE_URL/VERSION"
 
 print_info "Kod Upgrade Tool"
 echo ""
@@ -62,21 +63,12 @@ fi
 print_info "Checking for latest version..."
 
 if command -v curl &> /dev/null; then
-    VERSION_JSON=$(curl -sSL "https://api.itskod.com/version" 2>/dev/null || echo "")
+    LATEST_VERSION=$(curl -fsSL "$VERSION_URL" 2>/dev/null || echo "")
 elif command -v wget &> /dev/null; then
-    VERSION_JSON=$(wget -q -O - "https://api.itskod.com/version" 2>/dev/null || echo "")
+    LATEST_VERSION=$(wget -q -O - "$VERSION_URL" 2>/dev/null || echo "")
 fi
 
-# Parse version (try node first, fallback to grep)
-LATEST_VERSION=""
-if [ -n "$VERSION_JSON" ]; then
-    if command -v node &> /dev/null; then
-        LATEST_VERSION=$(echo "$VERSION_JSON" | node -e "try { console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).version || ''); } catch(e) { console.log(''); }" 2>/dev/null)
-    else
-        LATEST_VERSION=$(echo "$VERSION_JSON" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/' 2>/dev/null)
-    fi
-    LATEST_VERSION=$(echo "$LATEST_VERSION" | tr -d '[:space:]')
-fi
+LATEST_VERSION=$(echo "$LATEST_VERSION" | tr -d '[:space:]')
 
 if [ -n "$LATEST_VERSION" ]; then
     print_info "Latest version: v$LATEST_VERSION"

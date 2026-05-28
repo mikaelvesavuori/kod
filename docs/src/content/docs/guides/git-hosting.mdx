@@ -1,0 +1,138 @@
+---
+title: Git Hosting
+description: Create, import, clone, protect, and discover repositories over HTTP or SSH.
+---
+
+Kod stores repositories as regular bare Git repositories and serves them over HTTP and SSH. You can use `kod clone` for the smoothest local experience, or plain Git commands when you prefer standard tooling.
+
+## Create a Repository
+
+```bash
+kod repo create my-app
+```
+
+After creation, clone with the Kod helper:
+
+```bash
+kod clone my-app
+```
+
+Or use plain Git over HTTP:
+
+```bash
+git clone https://git.example.com/repos/my-app.git
+```
+
+HTTP Git uses Basic Auth. The username can be anything, and the password is your Kod API token.
+
+## Import a Repository
+
+Use `kod repo import` to mirror an existing local or remote Git repository into Kod:
+
+```bash
+kod repo import https://github.com/example/my-app.git
+kod repo import ../my-local-repo my-app
+```
+
+Kod imports with `git clone --mirror`, so branches and refs are preserved. The repository name is optional; if omitted, Kod derives it from the source URL or path.
+
+## SSH Access
+
+The SSH server is enabled by default on port `2222`. Configure it with `kod serve` flags or environment variables:
+
+```bash
+kod serve --ssh --ssh-port 2222
+
+KOD_SSH_ENABLED=true \
+KOD_SSH_PORT=2222 \
+kod serve
+```
+
+For production, either expose port `2222` directly or forward/bind port `22` to the Kod SSH port.
+
+### Add a Collaborator Key
+
+SSH access is based on a collaborator username and public key.
+
+As an admin, create a username-linked token and add the user as a collaborator:
+
+```bash
+kod token create alice --username alice --permissions repo:read,repo:write
+kod repo my-app collaborator add alice
+```
+
+Alice configures her CLI with that token and adds a public key:
+
+```bash
+kod init
+kod keys add ~/.ssh/id_ed25519.pub --name laptop
+```
+
+Then she can clone and push over SSH:
+
+```bash
+git clone ssh://kod@git.example.com:2222/my-app.git
+cd my-app
+git push origin main
+```
+
+Admins can manage another user's keys with `--username`:
+
+```bash
+kod keys add ~/.ssh/alice.pub --username alice --name workstation
+kod keys list --username alice
+kod keys remove <key-id>
+```
+
+## Anonymous Read-Only SSH
+
+For public mirrors, you can allow unauthenticated clone, fetch, and repository discovery over SSH:
+
+```bash
+KOD_SSH_ANONYMOUS_READ=true kod serve
+```
+
+Anonymous clients use the `anonymous` SSH username:
+
+```bash
+git clone ssh://anonymous@git.example.com:2222/my-app.git
+```
+
+Anonymous SSH is read-only. Pushes are rejected.
+
+## SSH Repository Discovery
+
+Kod supports lightweight repository discovery over SSH:
+
+```bash
+ssh kod@git.example.com -p 2222 repos
+ssh kod@git.example.com -p 2222 info my-app
+```
+
+Opening an SSH shell also shows a compact repository list:
+
+```bash
+ssh kod@git.example.com -p 2222
+```
+
+The repository list is filtered to what the authenticated key can read. Anonymous users only see repositories when anonymous read-only SSH is enabled.
+
+## Branch Protection
+
+Protected branches can only be pushed by the repository owner or an admin token. Collaborators with `repo:write` are blocked by the Git pre-receive hook.
+
+```bash
+kod repo my-app protected
+kod repo my-app protect main
+kod repo my-app unprotect main
+```
+
+## Access Rules
+
+| Access path | Authentication | Read access | Write access |
+|-------------|----------------|-------------|--------------|
+| `kod clone` | API token from `kod init` | `repo:read` plus collaborator or owner/admin | `repo:write` plus collaborator or owner/admin |
+| HTTP Git | API token as password | `repo:read` plus collaborator or owner/admin | `repo:write` plus collaborator or owner/admin |
+| SSH Git | Added public key | Owner or collaborator | Owner or collaborator, except anonymous |
+| Anonymous SSH | `anonymous` SSH username | Only when enabled | Never |
+

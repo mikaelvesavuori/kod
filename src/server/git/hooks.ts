@@ -51,11 +51,49 @@ done
 export function installPreReceiveHook(repoPath: string): void {
   const hookPath = join(repoPath, 'hooks', 'pre-receive');
   const hookContent = `#!/bin/sh
-# Kod pre-receive hook - validates push permissions
-# Currently allows all pushes
+# Kod pre-receive hook - validates protected branch pushes
+
+protected_file="$(pwd)/kod-protected-branches"
+
+if [ ! -f "$protected_file" ]; then
+  exit 0
+fi
+
+while read oldrev newrev refname; do
+  case "$refname" in
+    refs/heads/*)
+      branch=$(echo "$refname" | sed 's|refs/heads/||')
+      ;;
+    *)
+      continue
+      ;;
+  esac
+
+  while IFS= read -r protected_branch; do
+    [ -z "$protected_branch" ] && continue
+    [ "$branch" != "$protected_branch" ] && continue
+
+    if [ "$KOD_IS_ADMIN" = "true" ] || [ "$KOD_IS_OWNER" = "true" ]; then
+      continue
+    fi
+
+    echo "Kod: branch '$branch' is protected; only the repository owner or an admin can push to it" >&2
+    exit 1
+  done < "$protected_file"
+done
+
 exit 0
 `;
 
   writeFileSync(hookPath, hookContent, 'utf-8');
   chmodSync(hookPath, 0o755);
+}
+
+export function writeProtectedBranches(
+  repoPath: string,
+  branches: string[]
+): void {
+  const filePath = join(repoPath, 'kod-protected-branches');
+  const content = branches.length > 0 ? `${branches.join('\n')}\n` : '';
+  writeFileSync(filePath, content, 'utf-8');
 }

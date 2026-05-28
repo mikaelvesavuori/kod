@@ -14,7 +14,8 @@ const sharedOptions = {
   treeShaking: true,
   platform: 'node',
   target: 'node24',
-  format: 'esm'
+  format: 'esm',
+  external: ['ssh2', '*.node', 'cpu-features']
 };
 
 // Main CLI

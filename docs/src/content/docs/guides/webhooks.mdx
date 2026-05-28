@@ -1,0 +1,136 @@
+---
+title: Webhooks
+description: Deliver push and workflow events with signatures, delivery history, and retries.
+---
+
+Kod can notify external systems when repositories receive pushes or workflows finish. Webhooks are configured per repository.
+
+## Add a Webhook
+
+```bash
+kod repo my-app webhook add https://example.com/kod \
+  --events push,workflow \
+  --secret my-signing-secret
+```
+
+If `--events` is omitted, Kod subscribes the webhook to `push` events.
+
+Available events:
+
+| Event | When it fires |
+|-------|---------------|
+| `push` | A Git push queues repository workflows |
+| `workflow` | A workflow run completes or fails |
+
+List and remove webhooks:
+
+```bash
+kod repo my-app webhook list
+kod repo my-app webhook remove <webhook-id>
+```
+
+## Delivery Payloads
+
+Webhook requests are JSON `POST` requests. Every payload includes `event` and `repo`.
+
+Push event payload:
+
+```json
+{
+  "event": "push",
+  "repo": "my-app",
+  "branch": "main",
+  "commit": "abc123",
+  "workflowRunId": "run123"
+}
+```
+
+Workflow event payload:
+
+```json
+{
+  "event": "workflow",
+  "repo": "my-app",
+  "id": "run123",
+  "branch": "main",
+  "commit": "abc123",
+  "status": "completed"
+}
+```
+
+`status` is `completed` or `failed`.
+
+## Headers and Signatures
+
+Kod sends these headers with every delivery:
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | `application/json` |
+| `User-Agent` | `Kod-Webhooks` |
+| `X-Kod-Event` | The event name, such as `push` |
+| `X-Kod-Delivery` | Unique delivery ID |
+
+If a webhook secret is configured, Kod also sends:
+
+```text
+X-Kod-Signature-256: sha256=<hex-hmac>
+```
+
+The signature is an HMAC-SHA256 of the exact JSON request body using the webhook secret. Receivers should verify the signature before trusting the payload.
+
+## Delivery History
+
+Each delivery is recorded with status, attempts, timestamps, response status, and the last error if delivery fails:
+
+```bash
+kod repo my-app webhook deliveries <webhook-id>
+```
+
+Delivery statuses:
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Waiting for a retry or currently being retried |
+| `success` | The receiver returned a 2xx response |
+| `failed` | All retry attempts failed |
+
+## Retries
+
+Kod attempts each delivery up to four times. Automatic retry delays are:
+
+1. 30 seconds
+2. 5 minutes
+3. 30 minutes
+
+Each HTTP request has a 5 second timeout. Any non-2xx response is treated as a failed attempt.
+
+You can also retry a delivery manually:
+
+```bash
+kod repo my-app webhook retry <webhook-id> <delivery-id>
+```
+
+## Permissions
+
+Webhook management requires both repository ownership or admin access and the right permission:
+
+| Action | Permission |
+|--------|------------|
+| List webhooks and deliveries | `webhook:read` |
+| Create, delete, and retry webhooks | `webhook:write` |
+
+Create a token with webhook access:
+
+```bash
+kod token create integrations \
+  --permissions repo:read,webhook:read,webhook:write
+```
+
+## Receiver Tips
+
+- Return a 2xx response only after the event is accepted.
+- Store `X-Kod-Delivery` to make processing idempotent.
+- Validate `X-Kod-Signature-256` when a secret is configured.
+- Keep handlers fast; Kod times out webhook requests after 5 seconds.
+

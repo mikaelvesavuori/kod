@@ -2,6 +2,7 @@ import type { Route, HttpRequest, HttpResponse } from '../../shared/types.js';
 
 import type { Database } from '../db/index.js';
 import { hasPermission, FORBIDDEN } from '../auth.js';
+import { hasRepoAccess } from '../access.js';
 import { hasEncryptionKey } from '../../shared/crypto.js';
 
 export function createSecretRoutes(db: Database): Route[] {
@@ -20,6 +21,15 @@ const listSecrets = (db: Database): Route => ({
     const repo = await db.getRepo(params.name);
     if (!repo) {
       return { status: 404, body: { error: 'Repository not found' } };
+    }
+
+    if (
+      !(await hasRepoAccess(req, db, repo, {
+        permission: 'secrets:read',
+        allowCollaborator: true
+      }))
+    ) {
+      return FORBIDDEN;
     }
 
     const secrets = await db.getRepoSecrets(params.name);
@@ -49,6 +59,15 @@ const setSecret = (db: Database): Route => ({
     const repo = await db.getRepo(params.name);
     if (!repo) {
       return { status: 404, body: { error: 'Repository not found' } };
+    }
+
+    if (
+      !(await hasRepoAccess(req, db, repo, {
+        permission: 'secrets:write',
+        allowCollaborator: true
+      }))
+    ) {
+      return FORBIDDEN;
     }
 
     const body = req.body as { value?: string };
@@ -88,6 +107,15 @@ const deleteSecret = (db: Database): Route => ({
     const repo = await db.getRepo(params.name);
     if (!repo) {
       return { status: 404, body: { error: 'Repository not found' } };
+    }
+
+    if (
+      !(await hasRepoAccess(req, db, repo, {
+        permission: 'secrets:write',
+        allowCollaborator: true
+      }))
+    ) {
+      return FORBIDDEN;
     }
 
     await db.deleteSecret(params.name, params.secretName);

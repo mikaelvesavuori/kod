@@ -2,6 +2,7 @@
 import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { randomInt } from 'node:crypto';
 
 import type {
   WorkflowRun,
@@ -9,9 +10,15 @@ import type {
   WorkflowResult
 } from '../../shared/types.js';
 
-import { exec } from '../../shared/exec.js';
+import { execFile } from '../../shared/exec.js';
 import { runWorkflowFiles, discoverWorkflows } from './runner.js';
+import {
+  isValidBranchName,
+  isValidCommit,
+  resolveWorkflowFile
+} from './validation.js';
 import type { Database } from '../db/index.js';
+import { deliverWebhooks } from '../webhooks.js';
 
 interface QueuedWorkflow {
   id: string;
@@ -98,12 +105,20 @@ export class WorkflowQueue {
     let workDir: string | null = null;
 
     try {
+      if (!(await isValidBranchName(branch))) {
+        throw new Error(`Invalid branch name: ${branch}`);
+      }
+      if (!isValidCommit(commit)) {
+        throw new Error(`Invalid commit: ${commit}`);
+      }
+
       // Clone repo to temp directory
       workDir = mkdtempSync(join(tmpdir(), `kod-${repoName}-`));
       const repoPath = join(this.reposDir, `${repoName}.git`);
 
-      const cloneResult = await exec(
-        `git clone --branch ${branch} "${repoPath}" "${workDir}"`,
+      const cloneResult = await execFile(
+        'git',
+        ['clone', '--branch', branch, '--single-branch', repoPath, workDir],
         { timeout: 60000 }
       );
 
@@ -113,11 +128,22 @@ export class WorkflowQueue {
 
       // Checkout specific commit if provided
       if (commit) {
-        await exec(`git checkout ${commit}`, { cwd: workDir });
+        const checkoutResult = await execFile(
+          'git',
+          ['checkout', '--detach', commit],
+          { cwd: workDir }
+        );
+        if (checkoutResult.exitCode !== 0) {
+          throw new Error(
+            `Failed to checkout commit: ${checkoutResult.stderr}`
+          );
+        }
       }
 
       // Determine workflow files
-      const workflowFiles = files ?? discoverWorkflows(workDir);
+      const workflowFiles = files
+        ? validateWorkflowFiles(workDir, files)
+        : discoverWorkflows(workDir);
 
       if (workflowFiles.length === 0) {
         // No workflows to run
@@ -136,7 +162,8 @@ export class WorkflowQueue {
           env,
           branch,
           repo: repoName,
-          workingDir: workDir
+          workingDir: workDir,
+          redactedValues: Object.values(secrets)
         };
 
         // Run workflows
@@ -149,6 +176,12 @@ export class WorkflowQueue {
         completedAt: Date.now(),
         result
       });
+      void deliverWebhooks(this.db, repoName, 'workflow', {
+        id,
+        branch,
+        commit,
+        status: result.success ? 'completed' : 'failed'
+      }).catch(() => {});
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
 
@@ -171,6 +204,12 @@ export class WorkflowQueue {
         completedAt: Date.now(),
         result
       });
+      void deliverWebhooks(this.db, repoName, 'workflow', {
+        id,
+        branch,
+        commit,
+        status: 'failed'
+      }).catch(() => {});
     } finally {
       // Cleanup temp directory
       if (workDir && existsSync(workDir)) {
@@ -199,7 +238,17 @@ function generateId(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let id = '';
   for (let i = 0; i < 12; i++) {
-    id += chars.charAt(Math.floor(Math.random() * chars.length));
+    id += chars.charAt(randomInt(chars.length));
   }
   return id;
+}
+
+function validateWorkflowFiles(workDir: string, files: string[]): string[] {
+  return files.map((file) => {
+    const result = resolveWorkflowFile(workDir, file);
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
+    return result.path;
+  });
 }

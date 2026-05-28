@@ -10,11 +10,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export const RELEASE_URL = 'https://releases.itskod.com';
-export const VERSION_API_URL = 'https://api.itskod.com/version';
-
-export interface VersionResponse {
-  version: string;
-}
+export const VERSION_URL = `${RELEASE_URL}/VERSION`;
 
 export function getInstallDir(): string {
   return join(homedir(), '.kod');
@@ -34,13 +30,13 @@ export function getCurrentVersion(installDir?: string): string | null {
 }
 
 export async function getLatestVersion(
-  apiUrl: string = VERSION_API_URL
+  versionUrl: string = VERSION_URL
 ): Promise<string | null> {
   try {
-    const response = await fetch(apiUrl);
+    const response = await fetch(versionUrl);
     if (!response.ok) return null;
-    const data = (await response.json()) as VersionResponse;
-    return data.version || null;
+    const version = (await response.text()).trim();
+    return version || null;
   } catch {
     return null;
   }

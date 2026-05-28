@@ -463,4 +463,35 @@ describe('Database', () => {
       expect(secrets).toEqual({});
     });
   });
+
+  describe('Webhooks', () => {
+    test('It should create and list repo webhooks without leaking to other repos', async () => {
+      const webhook = await db.createRepoWebhook(
+        'my-repo',
+        'https://example.com/hook',
+        ['push', 'workflow'],
+        'secret'
+      );
+      await db.createRepoWebhook('other-repo', 'https://example.com/other');
+
+      const webhooks = await db.listRepoWebhooks('my-repo');
+
+      expect(webhooks).toHaveLength(1);
+      expect(webhooks[0].id).toBe(webhook.id);
+      expect(webhooks[0].events).toEqual(['push', 'workflow']);
+      expect(webhooks[0].secret).toBe('secret');
+    });
+
+    test('It should delete a repo webhook', async () => {
+      const webhook = await db.createRepoWebhook(
+        'my-repo',
+        'https://example.com/hook'
+      );
+
+      await db.deleteRepoWebhook('my-repo', webhook.id);
+
+      const webhooks = await db.listRepoWebhooks('my-repo');
+      expect(webhooks).toHaveLength(0);
+    });
+  });
 });

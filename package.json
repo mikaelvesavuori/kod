@@ -3,7 +3,7 @@
   "description": "The minimalist self-hosted Git tool that keeps you shipping.",
   "version": "1.0.0",
   "author": "Kod",
-  "license": "Kod Software License",
+  "license": "MIT",
   "keywords": [
     "git",
     "workflow",
@@ -34,6 +34,10 @@
     "sbom.json",
     "oss-licenses.txt"
   ],
+  "workspaces": [
+    "docs",
+    "site"
+  ],
   "scripts": {
     "start": "node dist/kod.mjs",
     "serve": "node dist/kod.mjs serve",
@@ -42,7 +46,16 @@
     "test": "npx vitest run",
     "test:watch": "npx vitest",
     "typecheck": "tsc --noEmit",
-    "docs": "npm run docs:licenses",
+    "docs": "npm run docs:install && npm --prefix docs run dev",
+    "docs:build": "npm run docs:install && npm --prefix docs run build",
+    "docs:preview": "npm run docs:install && npm --prefix docs run preview",
+    "docs:lint": "npm run docs:install && npm --prefix docs run lint",
+    "docs:install": "npm --prefix docs install",
+    "site": "npm run site:install && npm --prefix site run dev",
+    "site:build": "npm run site:install && npm --prefix site run build",
+    "site:lint": "npm run site:install && npm --prefix site run lint:css",
+    "site:install": "npm --prefix site install",
+    "web:build": "npm run site:build && npm run docs:build",
     "docs:licenses": "npx license-checker-rseidelsohn --production --plainVertical --excludePackagesStartingWith \"molnos;esbuild;@esbuild\" --out oss-licenses.txt",
     "sbom": "syft file:package-lock.json --output spdx-json > ./sbom.json",
     "scan": "grype ./sbom.json -o json",
@@ -51,22 +64,24 @@
     "clean": "rm -rf lib && rm -rf dist && mkdir lib",
     "lint": "npx @biomejs/biome check --write src/",
     "package": "npm pack",
-    "prepublishOnly": "npm run build && echo $npm_package_version > VERSION && npm run sbom && npm run docs:licenses && cp README_PUBLIC.md README.md",
-    "postpublish": "git checkout README.md && rm -f VERSION sbom.json oss-licenses.txt",
+    "prepublishOnly": "npm run build && echo $npm_package_version > VERSION && npm run sbom && npm run docs:licenses",
+    "postpublish": "rm -f VERSION sbom.json oss-licenses.txt",
     "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "2",
     "@types/node": "latest",
+    "@types/ssh2": "1",
     "@vitest/coverage-v8": "4",
     "esbuild": "latest",
     "husky": "9",
     "license-checker-rseidelsohn": "4",
     "tsx": "4",
-    "typescript": "5",
+    "typescript": "6",
     "vitest": "4"
   },
   "dependencies": {
-    "pikodb": "1"
+    "pikodb": "1",
+    "ssh2": "1"
   }
 }

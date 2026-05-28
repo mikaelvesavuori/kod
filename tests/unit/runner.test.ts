@@ -1,4 +1,7 @@
 import { describe, test, expect } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { runWorkflow } from '../../src/server/workflow/runner.js';
 import type { WorkflowContext } from '../../src/shared/types.js';
@@ -103,5 +106,40 @@ run:
     expect(result.steps[0].success).toBe(false);
     expect(result.steps[0].output).toContain('line1');
     expect(result.steps[0].output).not.toContain('line3');
+  });
+
+  test('It should redact configured secret values from output', async () => {
+    const workflow = `
+[step:leak]
+run: echo "token is secret-value"
+`;
+    const result = await runWorkflow(workflow, {
+      ...createContext(),
+      redactedValues: ['secret-value']
+    });
+
+    expect(result.steps[0].output).toContain('[secret]');
+    expect(result.steps[0].output).not.toContain('secret-value');
+  });
+
+  test('It should reject working directories outside the checkout', async () => {
+    const workingDir = mkdtempSync(join(tmpdir(), 'kod-runner-test-'));
+    const workflow = `
+[step:escape]
+working_dir: ..
+run: echo "nope"
+`;
+
+    try {
+      const result = await runWorkflow(workflow, {
+        ...createContext(),
+        workingDir
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.steps[0].error).toContain('inside the repository');
+    } finally {
+      rmSync(workingDir, { recursive: true, force: true });
+    }
   });
 });

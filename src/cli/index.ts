@@ -7,9 +7,18 @@ import { initCommand } from './commands/init.js';
 import {
   listRepos,
   createRepo,
+  importRepo,
   getRepoInfo,
   updateRepo,
-  deleteRepo
+  deleteRepo,
+  listProtectedBranches,
+  protectBranch,
+  unprotectBranch,
+  listWebhooks,
+  addWebhook,
+  removeWebhook,
+  listWebhookDeliveries,
+  retryWebhookDelivery
 } from './commands/repo.js';
 import {
   addCollaborator,
@@ -32,8 +41,11 @@ import {
 } from './commands/token.js';
 import { upgradeCommand } from './commands/upgrade.js';
 import { uninstallCommand } from './commands/uninstall.js';
+import { backupCommand, restoreCommand } from './commands/backup.js';
 import { cloneRepo, parseCloneArgs } from './commands/clone.js';
 import { setConfigOverrides } from './http-client.js';
+import { addKey, listKeys, removeKey } from './commands/keys.js';
+import { doctorCommand } from './commands/doctor.js';
 
 declare const __PKG_VERSION__: string;
 const VERSION = __PKG_VERSION__;
@@ -46,7 +58,6 @@ interface ParsedArgs {
 
 function parseGlobalArgs(args: string[]): ParsedArgs {
   const globalOverrides: Partial<KodConfig> = {};
-  const remainingArgs: string[] = [];
   let i = 0;
 
   while (i < args.length) {
@@ -57,10 +68,12 @@ function parseGlobalArgs(args: string[]): ParsedArgs {
     } else if (arg === '--server' || arg === '-s') {
       globalOverrides.serverUrl = args[++i];
     } else {
-      remainingArgs.push(arg);
+      break;
     }
     i++;
   }
+
+  const remainingArgs = args.slice(i);
 
   return {
     globalOverrides,
@@ -108,6 +121,14 @@ async function main(): Promise<void> {
         await repoCommand(commandArgs);
         break;
 
+      case 'keys':
+        await keysCommand(commandArgs);
+        break;
+
+      case 'doctor':
+        await doctorCommand();
+        break;
+
       case 'workflow':
         await workflowCommand(commandArgs);
         break;
@@ -122,6 +143,14 @@ async function main(): Promise<void> {
 
       case 'uninstall':
         await uninstallCommand();
+        break;
+
+      case 'backup':
+        await backupCommand(commandArgs);
+        break;
+
+      case 'restore':
+        await restoreCommand(commandArgs);
         break;
 
       case 'clone': {
@@ -163,6 +192,18 @@ async function serveCommand(args: string[]): Promise<void> {
       overrides.adminToken = args[++i];
     } else if (arg === '--encryption-key') {
       overrides.encryptionKey = args[++i];
+    } else if (arg === '--ssh') {
+      overrides.sshEnabled = true;
+    } else if (arg === '--no-ssh') {
+      overrides.sshEnabled = false;
+    } else if (arg === '--ssh-host') {
+      overrides.sshHost = args[++i];
+    } else if (arg === '--ssh-port') {
+      overrides.sshPort = parseInt(args[++i], 10);
+    } else if (arg === '--ssh-host-key') {
+      overrides.sshHostKeyPath = args[++i];
+    } else if (arg === '--ssh-anonymous-read') {
+      overrides.sshAnonymousRead = true;
     } else if (arg === '-h' || arg === '--help') {
       console.log(`Usage: kod serve [options]
 
@@ -170,17 +211,27 @@ Options:
   --port, -p <port>          Port to listen on (default: 3000)
   --data-dir <path>          Data directory for database
   --repos-dir <path>         Directory for Git repositories
-  --token <token>            API token for authentication
+  --token <token>            Legacy bootstrap token alias
   --admin-token <token>      Admin token for first-time setup
   --encryption-key <key>     Encryption key for secrets
+  --ssh / --no-ssh           Enable or disable SSH Git access
+  --ssh-host <host>          SSH listen host (default: 0.0.0.0)
+  --ssh-port <port>          SSH listen port (default: 2222)
+  --ssh-host-key <path>      SSH host private key path
+  --ssh-anonymous-read       Allow unauthenticated SSH clone/fetch/list
 
 Environment variables:
   KOD_PORT                   Port to listen on
   KOD_DATA_DIR               Data directory
   KOD_REPOS_DIR              Repos directory
-  KOD_API_TOKEN              API token
+  KOD_API_TOKEN              Legacy bootstrap token alias
   KOD_ADMIN_TOKEN            Admin token for first-time setup
-  KOD_ENCRYPTION_KEY         Encryption key for secrets`);
+  KOD_ENCRYPTION_KEY         Encryption key for secrets
+  KOD_SSH_ENABLED            Enable SSH server (true/false)
+  KOD_SSH_HOST               SSH listen host
+  KOD_SSH_PORT               SSH listen port
+  KOD_SSH_HOST_KEY_PATH      SSH host private key path
+  KOD_SSH_ANONYMOUS_READ     Allow anonymous SSH read access`);
       return;
     }
   }
@@ -192,7 +243,7 @@ Environment variables:
 async function repoCommand(args: string[]): Promise<void> {
   if (args.length === 0) {
     console.error('Usage: kod repo <command> [options]');
-    console.error('Commands: list, create, info, update, delete');
+    console.error('Commands: list, create, import, info, update, delete');
     process.exit(1);
   }
 
@@ -205,6 +256,10 @@ async function repoCommand(args: string[]): Promise<void> {
 
     case 'create':
       await createRepo(args[1]);
+      break;
+
+    case 'import':
+      await importRepo(args[1], args[2]);
       break;
 
     case 'delete':
@@ -233,12 +288,92 @@ async function repoCommand(args: string[]): Promise<void> {
         await getRepoInfo(repoName);
       } else if (action === 'collaborator') {
         await collaboratorSubcommand(repoName, args.slice(2));
+      } else if (action === 'protected') {
+        await listProtectedBranches(repoName);
+      } else if (action === 'protect') {
+        await protectBranch(repoName, args[2]);
+      } else if (action === 'unprotect') {
+        await unprotectBranch(repoName, args[2]);
+      } else if (action === 'webhook') {
+        await webhookSubcommand(repoName, args.slice(2));
       } else {
         console.error(`Unknown repo action: ${action}`);
-        console.error('Actions: info, collaborator');
+        console.error(
+          'Actions: info, collaborator, protected, protect, unprotect, webhook'
+        );
         process.exit(1);
       }
     }
+  }
+}
+
+async function webhookSubcommand(
+  repoName: string,
+  args: string[]
+): Promise<void> {
+  const action = args[0] || 'list';
+
+  switch (action) {
+    case 'list':
+      await listWebhooks(repoName);
+      break;
+
+    case 'add': {
+      const url = args[1];
+      const eventsIndex = args.indexOf('--events');
+      const secretIndex = args.indexOf('--secret');
+      const events =
+        eventsIndex !== -1 && args[eventsIndex + 1]
+          ? args[eventsIndex + 1].split(',').map((event) => event.trim())
+          : [];
+      const secret =
+        secretIndex !== -1 && args[secretIndex + 1]
+          ? args[secretIndex + 1]
+          : undefined;
+      await addWebhook(repoName, url, events, secret);
+      break;
+    }
+
+    case 'remove':
+      await removeWebhook(repoName, args[1]);
+      break;
+
+    case 'deliveries':
+      await listWebhookDeliveries(repoName, args[1]);
+      break;
+
+    case 'retry':
+      await retryWebhookDelivery(repoName, args[1], args[2]);
+      break;
+
+    default:
+      console.error(`Unknown webhook action: ${action}`);
+      console.error('Actions: list, add, remove, deliveries, retry');
+      process.exit(1);
+  }
+}
+
+async function keysCommand(args: string[]): Promise<void> {
+  const subcommand = args[0] || 'list';
+
+  switch (subcommand) {
+    case 'list':
+      await listKeys(args.slice(1));
+      break;
+
+    case 'add':
+      await addKey(args.slice(1));
+      break;
+
+    case 'remove':
+    case 'delete':
+      await removeKey(args.slice(1));
+      break;
+
+    default:
+      console.error(`Unknown keys command: ${subcommand}`);
+      console.error('Commands: list, add, remove');
+      process.exit(1);
   }
 }
 
@@ -293,6 +428,7 @@ Valid permissions:
   collaborator:read, collaborator:write
   workflow:read, workflow:trigger
   secrets:read, secrets:write
+  webhook:read, webhook:write
   admin
 
 Examples:
@@ -403,11 +539,18 @@ Commands:
   init                           Configure Kod (server URL, API token)
   serve                          Start the Kod server
   clone <url|name> [options]     Clone a repository (uses configured token)
+  doctor                         Check local config, Git, server, and auth
+  keys list                      List SSH public keys
+  keys add <key|path>            Add an SSH public key
+  keys remove <id>               Remove an SSH public key
+  backup [--output path]         Create a backup of data and repositories
+  restore <file> [--force]       Restore data and repositories from backup
   upgrade                        Upgrade Kod to the latest version
   uninstall                      Remove Kod binary and data
 
   repo list                      List all repositories
   repo create <name>             Create a new repository
+  repo import <source> [name]     Import a local or remote Git repository
   repo <name> info               Show repository details
   repo update <name> name <new>  Rename a repository
   repo delete <name>             Delete a repository
@@ -415,6 +558,14 @@ Commands:
   repo <name> collaborator list                List collaborators
   repo <name> collaborator add <user>          Add collaborator
   repo <name> collaborator remove <user>       Remove collaborator
+  repo <name> protected                       List protected branches
+  repo <name> protect <branch>                Protect branch from collaborator pushes
+  repo <name> unprotect <branch>              Remove branch protection
+  repo <name> webhook list                    List webhooks
+  repo <name> webhook add <url>               Add webhook
+  repo <name> webhook remove <id>             Remove webhook
+  repo <name> webhook deliveries <id>         List webhook deliveries
+  repo <name> webhook retry <id> <delivery>   Retry a webhook delivery
 
   token list                     List all API tokens (requires admin)
   token create <name> [options]  Create a new API token (requires admin)
@@ -441,7 +592,7 @@ Clone Options:
 
 Permissions: repo:read, repo:write, repo:delete, collaborator:read,
              collaborator:write, workflow:read, workflow:trigger,
-             secrets:read, secrets:write, admin
+             secrets:read, secrets:write, webhook:read, webhook:write, admin
 
 Environment Variables:
   KOD_API_TOKEN                  API token for authentication
@@ -455,10 +606,15 @@ Examples:
   kod -t kod_abc123 -s http://myserver:3000 repo list
   KOD_API_TOKEN=kod_abc123 kod repo list
   kod repo create my-app
+  kod repo import https://github.com/me/app.git
   kod repo my-app collaborator add alice
+  kod keys add ~/.ssh/id_ed25519.pub
   kod clone my-app
   kod clone http://localhost:3000/repos/my-app.git
   kod clone my-app --credentials kod_abc123
+  kod backup --output kod-backup.tar.gz
+  kod repo my-app protect main
+  kod repo my-app webhook add https://example.com/hook --events push,workflow
   kod token create ci-deploy --permissions repo:read,workflow:trigger
   kod token create alice-token --username alice --permissions repo:read,repo:write
   kod token create temp-token --expires 30

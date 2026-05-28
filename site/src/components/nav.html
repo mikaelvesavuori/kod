@@ -1,0 +1,63 @@
+<nav class="top-bar">
+  <a href="/index.html" class="logo">
+    <div id="logo-icon"><svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M96 392H65V120H96V392Z" fill="currentColor" stroke="currentColor" />
+        <path d="M447 392H416V120H447V392Z" fill="currentColor" stroke="currentColor" />
+        <circle cx="235" cy="312" r="56" stroke="currentColor" stroke-width="32" />
+        <circle cx="368" cy="312" r="56" stroke="currentColor" stroke-width="32" />
+        <path d="M160.5 232L96 280V311.5L206.5 232H160.5Z" fill="currentColor" stroke="currentColor" />
+        <path d="M207 391.5L96.5 281V322L167 391.5H207Z" fill="currentColor" stroke="currentColor" />
+      </svg></div>
+  </a>
+  <button class="menu-toggle" aria-label="Toggle menu">
+    <div class="menu-icon">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </button>
+</nav>
+
+<div class="menu-overlay">
+  <ul class="menu-links">
+    <li><a href="/index.html#features">Features</a></li>
+    <li><a href="/comparison.html">Comparison</a></li>
+    <li><a href="/docs/">Docs</a></li>
+    <li><a href="/agreement.html">License</a></li>
+    <li><a href="https://github.com/mikaelvesavuori/kod/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+    </li>
+  </ul>
+</div>
+
+<script>
+  (function () {
+    const toggle = document.querySelector('.menu-toggle');
+    const overlay = document.querySelector('.menu-overlay');
+    const icon = document.querySelector('.menu-icon');
+
+    function open() {
+      overlay.classList.add('open');
+      icon.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      overlay.classList.remove('open');
+      icon.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    toggle.addEventListener('click', function () {
+      if (overlay.classList.contains('open')) close();
+      else open();
+    });
+
+    overlay.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', close);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) close();
+    });
+  })();
+</script>

@@ -29,6 +29,12 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Build docs
+        run: npm run docs:build
+
+      - name: Build site
+        run: npm run site:build
+
       - name: Install Syft
         run: curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin
 

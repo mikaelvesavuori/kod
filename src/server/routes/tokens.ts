@@ -65,6 +65,8 @@ const createToken = (db: Database): Route => ({
       'workflow:trigger',
       'secrets:read',
       'secrets:write',
+      'webhook:read',
+      'webhook:write',
       'admin'
     ];
 

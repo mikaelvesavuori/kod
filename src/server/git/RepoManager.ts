@@ -1,7 +1,7 @@
 import { existsSync, rmSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { exec } from '../../shared/exec.js';
+import { execFile } from '../../shared/exec.js';
 
 export class RepoManager {
   private reposDir: string;
@@ -22,10 +22,33 @@ export class RepoManager {
     }
 
     // Create bare repository
-    const result = await exec(`git init --bare "${repoPath}"`);
+    const result = await execFile('git', ['init', '--bare', repoPath]);
 
     if (result.exitCode !== 0) {
       throw new Error(`Failed to create repository: ${result.stderr}`);
+    }
+
+    return repoPath;
+  }
+
+  async import(source: string, name: string): Promise<string> {
+    const repoPath = this.getRepoPath(name);
+
+    if (existsSync(repoPath)) {
+      throw new Error(`Repository '${name}' already exists`);
+    }
+
+    const result = await execFile(
+      'git',
+      ['clone', '--mirror', '--', source, repoPath],
+      {
+        timeout: 10 * 60 * 1000
+      }
+    );
+
+    if (result.exitCode !== 0) {
+      rmSync(repoPath, { recursive: true, force: true });
+      throw new Error(`Failed to import repository: ${result.stderr}`);
     }
 
     return repoPath;
@@ -69,7 +92,7 @@ export class RepoManager {
       return [];
     }
 
-    const result = await exec(`git --git-dir="${repoPath}" branch`, {
+    const result = await execFile('git', [`--git-dir=${repoPath}`, 'branch'], {
       cwd: repoPath
     });
 
@@ -90,8 +113,9 @@ export class RepoManager {
       return null;
     }
 
-    const result = await exec(
-      `git --git-dir="${repoPath}" symbolic-ref --short HEAD`,
+    const result = await execFile(
+      'git',
+      [`--git-dir=${repoPath}`, 'symbolic-ref', '--short', 'HEAD'],
       { cwd: repoPath }
     );
 
@@ -110,9 +134,13 @@ export class RepoManager {
     }
 
     const ref = branch || 'HEAD';
-    const result = await exec(`git --git-dir="${repoPath}" rev-parse ${ref}`, {
-      cwd: repoPath
-    });
+    const result = await execFile(
+      'git',
+      [`--git-dir=${repoPath}`, 'rev-parse', ref],
+      {
+        cwd: repoPath
+      }
+    );
 
     if (result.exitCode !== 0) {
       return null;

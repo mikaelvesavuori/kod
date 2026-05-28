@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <component src="head.html" props='{
+      "title": "Kod vs GitHub vs GitLab vs Gitea vs Jenkins — Comparison",
+      "metaTitle": "Kod vs GitHub vs GitLab vs Gitea vs Jenkins — Comparison",
+      "description": "An honest comparison of Kod against GitHub, GitLab, Gitea, Forgejo, and Jenkins. Compare cost, hardware requirements, setup, features, sovereignty, and migration.",
+      "canonicalUrl": "https://itskod.com/comparison.html",
+      "ogUrl": "https://itskod.com/comparison.html",
+      "ogTitle": "Kod vs GitHub vs GitLab vs Gitea vs Jenkins — Comparison",
+      "ogDescription": "How does Kod stack up against GitHub, GitLab, Gitea, and Jenkins? An honest look at cost, complexity, sovereignty, and more.",
+      "ogImage": "https://itskod.com/assets/kod-dark.png",
+      "twitterUrl": "https://itskod.com/comparison.html",
+      "twitterTitle": "Kod vs GitHub vs GitLab vs Gitea vs Jenkins — Comparison",
+      "twitterDescription": "How does Kod stack up against GitHub, GitLab, Gitea, and Jenkins? An honest look at cost, complexity, sovereignty, and more.",
+      "twitterImage": "https://itskod.com/assets/kod-dark.png"
+    }'>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Kod vs GitHub vs GitLab vs Gitea vs Jenkins — Comparison",
+        "url": "https://itskod.com/comparison.html",
+        "description": "An honest comparison of Kod against GitHub, GitLab, Gitea, Forgejo, and Jenkins across cost, hardware, setup, features, sovereignty, and migration.",
+        "mainEntity": {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How much does Kod cost compared to GitHub and GitLab?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Kod is free for all use cases, private or commercial. GitHub charges $4—21/user/month for advanced features. GitLab charges $29—99/user/month. Kod runs on your own hardware with no per-seat fees."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What are the hardware requirements for Kod?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Kod is a single ~70KB binary requiring only Node.js 24+ on Linux or macOS. No databases, containers, or external services. It runs comfortably on a $5/month VPS. GitLab self-hosted recommends 8+ CPU cores and 16GB+ RAM."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is Kod a good self-hosted alternative to GitHub?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Kod is a good fit if you need Git repositories and simple CI/CD workflows with full data sovereignty. It intentionally does not include pull requests, issues, wikis, or project management. If you need those, GitHub or GitLab are better choices."
+              }
+            }
+          ]
+        }
+      }
+      </script>
+    </component>
+  </head>
+
+  <body>
+    <component src="nav.html" />
+
+    <main>
+
+      <div class="page-hero">
+        <div class="page-hero-content">
+          <h1>How Kod compares</h1>
+          <p class="page-hero-subtitle">An honest look at how Kod stacks up against the tools you already know. I'll
+            tell you where Kod wins and where it intentionally does less.</p>
+        </div>
+      </div>
+
+      <section>
+        <div class="comparison-table-wrapper">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="highlight-col">Kod</th>
+                <th>GitHub</th>
+                <th>GitLab SaaS</th>
+                <th>GitLab Self-hosted</th>
+                <th>Gitea / Forgejo</th>
+                <th>Jenkins</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Typical cost</strong></td>
+                <td class="highlight-col">Free + minimal infra costs</td>
+                <td>Free → $21/user/mo</td>
+                <td>Free → $99/user/mo</td>
+                <td>Free (CE) or licensed + high infra costs</td>
+                <td>Free + medium infra costs</td>
+                <td>Free + high infra costs</td>
+              </tr>
+              <tr>
+                <td><strong>Hardware</strong></td>
+                <td class="highlight-col">~70KB binary, anything that runs Linux</td>
+                <td>N/A (SaaS)</td>
+                <td>N/A (SaaS)</td>
+                <td>8+ cores, 16GB+ RAM</td>
+                <td>1 core, 512MB+ RAM</td>
+                <td>2+ cores, 256MB+ RAM</td>
+              </tr>
+              <tr>
+                <td><strong>Time to value</strong></td>
+                <td class="highlight-col">Minutes</td>
+                <td>Minutes (signup)</td>
+                <td>Minutes (signup)</td>
+                <td>Hours to days</td>
+                <td>~30 minutes</td>
+                <td>Hours</td>
+              </tr>
+              <tr>
+                <td><strong>Product complexity</strong></td>
+                <td class="highlight-col">Minimal</td>
+                <td>Medium</td>
+                <td>High</td>
+                <td>High</td>
+                <td>Low</td>
+                <td>High</td>
+              </tr>
+              <tr>
+                <td><strong>Maintenance</strong></td>
+                <td class="highlight-col">Near zero</td>
+                <td>None (managed)</td>
+                <td>None (managed)</td>
+                <td>High</td>
+                <td>Low</td>
+                <td>High</td>
+              </tr>
+              <tr>
+                <td><strong>Git hosting</strong></td>
+                <td class="highlight-col">Yes</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td><strong>CI/CD</strong></td>
+                <td class="highlight-col">Sequential workflows</td>
+                <td>GitHub Actions</td>
+                <td>GitLab CI</td>
+                <td>GitLab CI</td>
+                <td>Gitea Actions</td>
+                <td>Pipelines</td>
+              </tr>
+              <tr>
+                <td><strong>Pull requests</strong></td>
+                <td class="highlight-col">No</td>
+                <td>Yes</td>
+                <td>Yes (merge requests)</td>
+                <td>Yes (merge requests)</td>
+                <td>Yes</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td><strong>Project management</strong></td>
+                <td class="highlight-col">No</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>No</td>
+              </tr>
+              <tr>
+                <td><strong>Data sovereignty</strong></td>
+                <td class="highlight-col">Full</td>
+                <td>None (US-hosted)</td>
+                <td>Limited</td>
+                <td>Full</td>
+                <td>Full</td>
+                <td>Full</td>
+              </tr>
+              <tr>
+                <td><strong>Dependencies</strong></td>
+                <td class="highlight-col">Node.js only</td>
+                <td>N/A</td>
+                <td>N/A</td>
+                <td>PostgreSQL, Redis, etc.</td>
+                <td>Optional DB</td>
+                <td>Java, plugins</td>
+              </tr>
+              <tr>
+                <td><strong>Can run locally</strong></td>
+                <td class="highlight-col">Fully; part of its design</td>
+                <td>No</td>
+                <td>No</td>
+                <td>Partly</td>
+                <td>Yes</td>
+                <td>Partly</td>
+              </tr>
+              <tr>
+                <td><strong>Value prop</strong></td>
+                <td class="highlight-col">Minimal, fast, sovereign</td>
+                <td>Ecosystem & network</td>
+                <td>All-in-one DevOps</td>
+                <td>All-in-one, self-hosted</td>
+                <td>Lightweight self-hosted</td>
+                <td>Extensible CI/CD</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="cost" class="comparison-section">
+        <h2>Typical cost</h2>
+        <p>
+          Kod is free for all use cases, private or commercial. No per-seat pricing, no feature gates, no "contact
+          sales" tiers. You pay for the server you run it on, which could easily be a $5/month VPS, and that's it.
+        </p>
+        <p>
+          <strong>GitHub</strong> is free for public repos and small teams, but advanced features (Actions minutes,
+          security scanning, SSO) push you to $4—21/user/month. For a 20-person team, that's up to $5,000/year.
+        </p>
+        <p>
+          <strong>GitLab SaaS</strong> starts free but the Premium tier ($29/user/month) is where most teams land.
+          Ultimate is $99/user/month. A 20-person team on Premium pays nearly $7,000/year.
+        </p>
+        <p>
+          <strong>GitLab self-hosted</strong> (Community Edition) is free, but the infrastructure isn't. Expect
+          $50—200+/month for a server beefy enough to run it, plus your time maintaining it.
+        </p>
+        <p>
+          <strong>Gitea / Forgejo</strong> are free and self-hosted. Infrastructure costs are low (similar to Kod),
+          though you still need to maintain the instance.
+        </p>
+        <p>
+          <strong>Jenkins</strong> is free software, but the infrastructure and maintenance costs add up fast. Plugin
+          management, security patching, and scaling build agents are ongoing expenses — in time if not in money.
+        </p>
+      </section>
+
+      <section id="hardware" class="comparison-section">
+        <h2>Hardware requirements</h2>
+        <p>
+          Kod is a single ~70KB binary. It needs Node.js 24+ on Linux or macOS. There are no databases, no containers,
+          no message queues, no background services. It runs comfortably on the smallest VPS or Raspberry Pi you can
+          buy.
+        </p>
+        <p>
+          <strong>GitHub and GitLab SaaS</strong> run in the cloud — you don't manage hardware, but you also don't
+          control it.
+        </p>
+        <p>
+          <strong>GitLab self-hosted</strong> is the heavy end of the spectrum. The official recommendation is 8+ CPU
+          cores, 16GB+ RAM, and you'll need PostgreSQL, Redis, and optionally Prometheus, Grafana, Sidekiq workers, and
+          more. Many teams report needing even more for comfortable operation.
+        </p>
+        <p>
+          <strong>Gitea / Forgejo</strong> are lightweight for what they offer. A single-core VM with 512MB—1GB RAM will
+          get you started. They use SQLite by default, so no external database is required out of the box.
+        </p>
+        <p>
+          <strong>Jenkins</strong> needs at least 2 cores and 2GB RAM for the controller, plus separate agents for
+          builds. Java is required. In practice, most Jenkins setups consume far more than the minimums.
+        </p>
+      </section>
+
+      <section id="setup" class="comparison-section">
+        <h2>Setup and maintenance</h2>
+        <p>
+          Kod installs in one command, starts with one command, and upgrades—you guessed it—with one command. There's no
+          database to configure, no admin dashboard to set up, no plugins to install. Updates are a binary swap.
+          The maintenance burden is close to zero because there's almost nothing to maintain.
+        </p>
+        <p>
+          <strong>GitHub and GitLab SaaS</strong> win on setup — sign up and you're running. But you're also locked into
+          their update schedule, their UI changes, and their outages.
+        </p>
+        <p>
+          <strong>GitLab self-hosted</strong> is notoriously heavy to maintain. Upgrades require careful
+          version-by-version migrations. Background jobs, certificate rotation, backup configuration, and monitoring are
+          ongoing work. Many teams dedicate part of an engineer's time to GitLab upkeep.
+        </p>
+        <p>
+          <strong>Gitea / Forgejo</strong> are straightforward to set up (single binary + optional config) and
+          relatively easy to maintain. Upgrades are usually smooth. A good middle ground if you want more features than
+          Kod but less weight than GitLab.
+        </p>
+        <p>
+          <strong>Jenkins</strong> is infamous for maintenance. Plugin compatibility issues, Groovy pipeline debugging,
+          security patches, and agent management consume real engineering time.
+        </p>
+      </section>
+
+      <section id="features" class="comparison-section">
+        <h2>Feature scope</h2>
+        <p>
+          Kod does two things: <strong>Git repositories</strong> and <strong>sequential workflows</strong>.
+          That's it. No pull requests, no issues, no wikis, no package registries, no built-in code review.
+        </p>
+        <p>
+          If you need those things, Kod is not the right tool. GitHub and GitLab are full platforms with thousands of
+          features. Gitea gives you a solid GitHub-like experience self-hosted. Jenkins has a plugin for nearly
+          everything.
+        </p>
+        <p>
+          But here's the thing: many teams don't need all that. If you practice trunk-based development, pair
+          programming, or simply prefer lightweight processes, you don't need pull requests. If you track work in a
+          separate tool, you don't need built-in issues. Kod is for teams who want to remove the platform tax, not add
+          more platform.
+        </p>
+        <p>
+          What Kod does, it does well: encrypted secrets, scoped tokens, collaborator management, workflows that run
+          identically locally and on the server — all without a single dashboard.
+        </p>
+      </section>
+
+      <section id="sovereignty" class="comparison-section">
+        <h2>Sovereignty and data control</h2>
+        <p>
+          With Kod, your code never leaves your server. There are no analytics, no telemetry, no phone-home behavior.
+          You own everything.
+        </p>
+        <p>
+          <strong>GitHub</strong> stores your code on Microsoft-owned infrastructure in the US. GitHub Copilot's
+          training data policies have been controversial. For regulated industries or teams in the EU, this is a
+          compliance concern.
+        </p>
+        <p>
+          <strong>GitLab SaaS</strong> is better — they offer data residency options and are transparent about their
+          architecture — but your data still lives on their infrastructure.
+        </p>
+        <p>
+          <strong>GitLab self-hosted, Gitea, Forgejo, and Kod</strong> all give you full sovereignty. The difference is
+          in what you have to operate to get it. GitLab self-hosted means running a complex stack. Gitea/Forgejo is
+          moderate. Kod is the least operational burden for full sovereignty.
+        </p>
+        <p>
+          <strong>Jenkins</strong> runs on your infra too, but it's CI/CD only — you still need a Git host somewhere.
+        </p>
+      </section>
+
+      <section id="migration" class="comparison-section">
+        <h2>Migration ease</h2>
+        <p>
+          Moving to Kod is straightforward: create a repo, add Kod as a remote, push. Your Git history comes with you.
+          Workflows need to be written in Kod's TOML format, but they're simple enough that this is usually a quick
+          task.
+        </p>
+        <p>
+          Moving <em>away</em> from Kod is equally simple. Your repos are standard Git. Clone them, push to the next
+          host. No proprietary metadata or lock-in.
+        </p>
+        <p>
+          <strong>GitHub and GitLab</strong> make it easy to import repositories, but migrating <em>away</em> means
+          leaving behind issues, PRs, CI configs, wikis, and integrations. The more you use, the harder it is to leave.
+        </p>
+        <p>
+          <strong>Gitea / Forgejo</strong> support importing from GitHub/GitLab including issues and PRs. Migration in
+          and out is reasonable.
+        </p>
+        <p>
+          <strong>Jenkins</strong> pipelines are notoriously hard to migrate. Groovy-based Jenkinsfiles, shared
+          libraries, and plugin-specific syntax create deep lock-in.
+        </p>
+      </section>
+
+      <section id="value" class="comparison-section">
+        <h2>Main value proposition</h2>
+        <p>
+          Every tool in this comparison optimizes for something different. Picking the right one means knowing what
+          <em>you</em> optimize for.
+        </p>
+        <p>
+          <strong>Kod</strong> optimizes for <strong>speed, simplicity, and sovereignty</strong>. It's for developers
+          and teams who want Git and CI/CD without the platform. No dashboards, no bloat, no vendor lock-in.
+        </p>
+        <p>
+          <strong>GitHub</strong> optimizes for <strong>ecosystem and network effects</strong>. It's where open source
+          lives, where developers have profiles, and where integrations are abundant.
+        </p>
+        <p>
+          <strong>GitLab</strong> optimizes for <strong>the complete DevOps lifecycle</strong>. One tool from planning
+          to monitoring. Powerful, but complex.
+        </p>
+        <p>
+          <strong>Gitea / Forgejo</strong> optimize for <strong>a lightweight, self-hosted GitHub-like
+            experience</strong>. A good balance of features and simplicity.
+        </p>
+        <p>
+          <strong>Jenkins</strong> optimizes for <strong>extensibility</strong>. If you need a CI/CD tool that can do
+          anything via plugins, Jenkins is unmatched — but you pay in maintenance.
+        </p>
+      </section>
+
+      <section class="install">
+        <h2>Ready to try Kod?</h2>
+        <p>
+          One command. No signup, no credit card, no configuration wizard.
+        </p>
+        <div class="code-block">
+          <code>curl -sSL https://releases.itskod.com/install.sh | bash</code>
+          <button class="copy-btn copy-install">Copy</button>
+        </div>
+        <p>Requires macOS or Linux and Node.js 24 or later.</p>
+      </section>
+
+    </main>
+
+    <component src="footer.html" />
+
+    <script src="/code/install-button.js" async></script>
+
+  </body>
+
+</html>

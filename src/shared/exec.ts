@@ -38,23 +38,23 @@ export function exec(
   });
 }
 
-export function execStream(
+export function execFile(
   command: string,
-  args: string[],
+  args: string[] = [],
   options: ExecOptions = {}
 ): Promise<ExecResult> {
   return new Promise((resolve) => {
     const env = options.env ? { ...process.env, ...options.env } : process.env;
-
     const proc = spawn(command, args, {
       cwd: options.cwd,
       env,
-      shell: true
+      shell: false
     });
 
     let stdout = '';
     let stderr = '';
     let killed = false;
+    let timeout: NodeJS.Timeout | undefined;
 
     proc.stdout.on('data', (data) => {
       stdout += data.toString();
@@ -65,21 +65,23 @@ export function execStream(
     });
 
     if (options.timeout) {
-      setTimeout(() => {
+      timeout = setTimeout(() => {
         killed = true;
         proc.kill('SIGKILL');
       }, options.timeout);
     }
 
     proc.on('close', (code) => {
+      if (timeout) clearTimeout(timeout);
       resolve({
         stdout,
         stderr,
-        exitCode: killed ? 124 : (code ?? 0) // 124 = timeout
+        exitCode: killed ? 124 : (code ?? 0)
       });
     });
 
     proc.on('error', (err) => {
+      if (timeout) clearTimeout(timeout);
       resolve({
         stdout,
         stderr: stderr + err.message,

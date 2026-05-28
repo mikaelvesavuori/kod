@@ -1,0 +1,19 @@
+User-agent: *
+Disallow: /success.html
+
+User-agent: GPTBot
+Disallow: /success.html
+
+User-agent: ChatGPT-User
+Disallow: /success.html
+
+User-agent: Claude-Web
+Disallow: /success.html
+
+User-agent: anthropic-ai
+Disallow: /success.html
+
+User-agent: Perplexity
+Disallow: /success.html
+
+Sitemap: https://itskod.com/sitemap.xml

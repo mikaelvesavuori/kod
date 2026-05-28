@@ -182,17 +182,29 @@ const gitReceivePack = (db: Database, repoManager: RepoManager): Route => ({
     }
 
     const repoPath = repoManager.getRepoPath(params.name);
-    return runGitCommand('git-receive-pack', repoPath, req.body as Buffer);
+    const authReq = req as HttpRequestWithAuth;
+    const tokenInfo = authReq.tokenInfo;
+    const repo = await db.getRepo(params.name);
+
+    return runGitCommand('git-receive-pack', repoPath, req.body as Buffer, {
+      KOD_IS_ADMIN: tokenInfo?.permissions.includes('admin') ? 'true' : 'false',
+      KOD_IS_OWNER: repo?.ownerTokenId === tokenInfo?.id ? 'true' : 'false',
+      KOD_TOKEN_ID: tokenInfo?.id ?? '',
+      KOD_USERNAME: tokenInfo?.username ?? ''
+    });
   }
 });
 
 function runGitCommand(
   command: string,
   repoPath: string,
-  input: Buffer
+  input: Buffer,
+  env: Record<string, string> = {}
 ): Promise<HttpResponse> {
   return new Promise((resolve) => {
-    const proc = spawn(command, ['--stateless-rpc', repoPath]);
+    const proc = spawn(command, ['--stateless-rpc', repoPath], {
+      env: { ...process.env, ...env }
+    });
 
     const chunks: Buffer[] = [];
     proc.stdout.on('data', (data) => chunks.push(data));

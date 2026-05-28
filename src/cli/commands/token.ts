@@ -112,6 +112,8 @@ export function parsePermissions(args: string[]): TokenPermission[] {
     'workflow:trigger',
     'secrets:read',
     'secrets:write',
+    'webhook:read',
+    'webhook:write',
     'admin'
   ];
 

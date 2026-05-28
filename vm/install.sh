@@ -143,12 +143,12 @@ chmod +x /home/kod/.local/bin/kod
 chown -R kod:kod /home/kod/.local
 rm -rf /tmp/kod /tmp/kod.zip
 
-# Generate API token
-echo "Generating API token..."
-KOD_API_TOKEN="kod_$(openssl rand -hex 24)"
-echo "$KOD_API_TOKEN" > /home/kod/.kod/api-token
-chown kod:kod /home/kod/.kod/api-token
-chmod 600 /home/kod/.kod/api-token
+# Generate bootstrap admin token
+echo "Generating bootstrap admin token..."
+KOD_ADMIN_TOKEN="kod_$(openssl rand -hex 24)"
+echo "$KOD_ADMIN_TOKEN" > /home/kod/.kod/admin-token
+chown kod:kod /home/kod/.kod/admin-token
+chmod 600 /home/kod/.kod/admin-token
 
 # Create disk space monitoring script
 echo "Creating disk space monitoring..."
@@ -221,6 +221,7 @@ BIN_DIR="/home/kod/.local/bin"
 INSTALL_DIR="/home/kod/.kod"
 VERSION_FILE="$INSTALL_DIR/VERSION"
 RELEASE_URL="https://itskod.com/release"
+VERSION_URL="https://releases.itskod.com/VERSION"
 
 print_info "Kod Upgrade Tool"
 echo ""
@@ -234,12 +235,8 @@ fi
 
 # Check latest version
 print_info "Checking for latest version..."
-VERSION_JSON=$(curl -sSL "https://api.itskod.com/version" 2>/dev/null || echo "")
-LATEST_VERSION=""
-if [ -n "$VERSION_JSON" ]; then
-    LATEST_VERSION=$(echo "$VERSION_JSON" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/' 2>/dev/null || echo "")
-    LATEST_VERSION=$(echo "$LATEST_VERSION" | tr -d '[:space:]')
-fi
+LATEST_VERSION=$(curl -fsSL "$VERSION_URL" 2>/dev/null || echo "")
+LATEST_VERSION=$(echo "$LATEST_VERSION" | tr -d '[:space:]')
 
 if [ -n "$LATEST_VERSION" ]; then
     print_info "Latest version: v$LATEST_VERSION"
@@ -341,7 +338,7 @@ User=kod
 Group=kod
 WorkingDirectory=/home/kod/.kod
 Environment="PATH=/home/kod/.local/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="KOD_API_TOKEN=${KOD_API_TOKEN}"
+Environment="KOD_ADMIN_TOKEN=${KOD_ADMIN_TOKEN}"
 Environment="KOD_DATA_DIR=/home/kod/.kod/data"
 Environment="KOD_REPOS_DIR=/home/kod/.kod/repos"
 ExecStart=/home/kod/.local/bin/kod serve --port 3000
@@ -418,10 +415,10 @@ echo ""
 echo "=========================================="
 echo "Domain: https://${KOD_DOMAIN}"
 echo ""
-echo "API Token (save this!):"
-echo "  $KOD_API_TOKEN"
+echo "Admin token (save this!):"
+echo "  $KOD_ADMIN_TOKEN"
 echo ""
-echo "Token also saved to: /home/kod/.kod/api-token"
+echo "Token also saved to: /home/kod/.kod/admin-token"
 echo "=========================================="
 echo ""
 echo "Logs:"
@@ -438,4 +435,4 @@ echo ""
 echo "To use Kod CLI locally, run:"
 echo "  kod init"
 echo "  # Enter: https://${KOD_DOMAIN}"
-echo "  # Enter: $KOD_API_TOKEN"
+echo "  # Enter: $KOD_ADMIN_TOKEN"

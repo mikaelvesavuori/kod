@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <component src="head.html" props='{
+      "title": "Kod — The minimalist self-hosted Git tool that keeps you shipping.",
+      "metaTitle": "Kod — The minimalist self-hosted Git tool that keeps you shipping.",
+      "description": "Kod is a minimal, performance-oriented, self-hosted Git platform with plain-file workflows. No dashboards, no bloat.",
+      "canonicalUrl": "https://itskod.com/",
+      "ogUrl": "https://itskod.com/",
+      "ogTitle": "Kod — The minimalist self-hosted Git tool that keeps you shipping.",
+      "ogDescription": "Remote Git repositories and plain-file workflows. Self-hosted, fast, no bloat.",
+      "ogImage": "https://itskod.com/assets/kod-dark.png",
+      "twitterUrl": "https://itskod.com/",
+      "twitterTitle": "Kod — The minimalist self-hosted Git tool that keeps you shipping.",
+      "twitterDescription": "Remote Git repositories and plain-file workflows. Self-hosted, fast, no bloat.",
+      "twitterImage": "https://itskod.com/assets/kod-dark.png"
+    }'>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Kod",
+        "url": "https://itskod.com",
+        "description": "Minimal, performance-oriented, self-hosted Git platform with plain-file workflows.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, macOS",
+        "author": {
+          "@type": "Person",
+          "name": "Mikael Vesavuori"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+      </script>
+    </component>
+  </head>
+
+  <body>
+    <component src="nav.html" />
+
+    <main>
+
+      <section class="hero">
+        <div>
+          <h1>It's Kod.</h1>
+          <p class="large">
+            The minimalist, developer-focused, self-hosted alternative to the <span class="switch"
+              id="switch-word">SaaS</span> tool you use today.
+          </p>
+        </div>
+      </section>
+
+      <section id="features">
+        <h2>You don't need a platform,<br>you need to ship.</h2>
+        <p class="large">
+          You need Git repositories and automation that runs fast, locally and on your own servers, without dashboards
+          or bloat.
+        </p>
+        <p class="large">
+          Kod helps you work like the pros, optimizing for speed and simplicity—two key factors behind high-performing
+          teams' tools.
+        </p>
+      </section>
+
+      <section class="list">
+        <h2>Get what you need</h2>
+        <p><strong>Remote Git repositories.</strong><br />Create, push, delete, and clone over HTTP without any UI or
+          magic layers needed.</p>
+        <p><strong>Simple, sequential workflows.</strong><br />Readable TOML-style files that execute steps in order. If
+          you can read it, you understand it.</p>
+        <p><strong>Lean collaboration.</strong><br />Add and remove collaborators with granular token permissions—scoped
+          to repos, workflows, and secrets, with built-in expiration.</p>
+        <p><strong>Encrypted secrets.</strong><br />AES-256-GCM encryption at rest. Secrets are injected into workflows
+          at runtime—never exposed via API or logs.</p>
+        <p><strong>Zero platform tax.</strong><br />No dashboards, no databases, no background services pretending to
+          help. One ~70KB binary that works as both server and CLI.</p>
+      </section>
+
+      <section id="workflows">
+        <h2>Workflows</h2>
+        <p>
+          Workflows are plain files. They run when you push. The same files run locally.
+        </p>
+        <pre><code># Run it with: kod workflow demo.toml
+
+timeout: 120
+
+[step:test]
+run: npm test
+continue_on_error: true
+
+[step:build]
+run:
+  echo "Start the build..."
+  npm run build
+
+[step:deploy]
+if: "branch == 'main'"
+  run: ./deploy.sh
+</code></pre>
+
+        <p>
+          Sequential workflows are also supported.
+        </p>
+
+      </section>
+
+      <section id="download" class="install">
+        <h2>Download</h2>
+        <p>
+          Install Kod with a single command. Runs wherever you want it to.
+        </p>
+        <div class="code-block">
+          <code>curl -sSL https://releases.itskod.com/install.sh | bash</code>
+          <button class="copy-btn copy-install">Copy</button>
+        </div>
+        <p>Requires macOS or Linux and Node.js 24 or later.</p>
+      </section>
+
+      <section id="get-started">
+        <h2>Get started</h2>
+        <pre><code># Start server
+kod serve --admin-token kod_my_secret
+
+# Configure CLI (enter the same token when prompted)
+kod init
+
+# Create repo, clone, push
+kod repo create my-app
+kod clone my-app
+cd my-app && echo "Welcome to Kod!" >> welcome.txt
+git add . && git commit -m "feat: use kod" && git push origin main</code></pre>
+      </section>
+
+      <section id="faq">
+        <h2>FAQ</h2>
+
+        <div class="faq-item">
+          <h3>Is this competing with GitHub or GitLab?</h3>
+          <p>No, not really. Kod does Git repositories and workflows. Nothing else.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can I use branches?</h3>
+          <p>Yes. Kod supports branches, though the workflow is optimized for trunk-based development.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How about pull requests or code review?</h3>
+          <p>Not built in. Use other tools if you need them.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can workflows run locally?</h3>
+          <p>Yes. The same workflow files run on your machine.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What are the system requirements?</h3>
+          <p>Node.js 24+ on Linux or macOS. No databases, containers, or external services needed.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How are secrets handled?</h3>
+          <p>Encrypted at rest with AES-256-GCM. Injected into the workflow process environment at runtime. Never
+            exposed through the API or written to logs.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can I have multiple users?</h3>
+          <p>Yes. Create tokens with fine-grained permissions and add per-repository collaborators.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can I trigger workflows manually?</h3>
+          <p>Yes, via the API. You don't have to push to run a workflow.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How do I run Kod in production?</h3>
+          <p>Use systemd, Docker, or put it behind a reverse proxy like Caddy or nginx for HTTPS.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Why is this free and open source?</h3>
+          <p>All in all, Kod is a pretty small project and it's also critical enough to warrant making as easy as
+            possible to use, fork, inspect, and self-host. With the amount of sovereignty discussions ongoing, offering a
+            neat, minimalist way to securely work with your Git repositories seems like The Right Thing To Do™. Also,
+            it's always nice building software one thinks is better than the options! :)</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What license does Kod use?</h3>
+          <p>Kod is released under the MIT License. Use it, self-host it, fork it, adapt it, and share improvements. The
+            project welcomes <a href="https://github.com/mikaelvesavuori/kod/issues" target="_blank"
+              rel="noopener noreferrer">issues</a> for bugs, ideas, and improvements.</p>
+        </div>
+      </section>
+    </main>
+
+    <component src="footer.html" />
+
+    <script>
+      // rotating hero words with smooth transition
+      const words = ["SaaS", "foreign", "bloated", "expensive"];
+      const el = document.getElementById("switch-word");
+      let i = 0;
+
+      setInterval(() => {
+        el.classList.remove('fade-in');
+        el.classList.add('fade-out');
+
+        setTimeout(() => {
+          i = (i + 1) % words.length;
+          el.textContent = words[i];
+          el.classList.remove('fade-out');
+          el.classList.add('fade-in');
+        }, 250);
+      }, 1200);
+
+      // FAQ accordion
+      document.querySelectorAll('.faq-item').forEach(item => {
+        item.addEventListener('click', () => {
+          item.classList.toggle('open');
+        });
+      });
+    </script>
+    <script src="/code/install-button.js" async></script>
+
+  </body>
+
+</html>
