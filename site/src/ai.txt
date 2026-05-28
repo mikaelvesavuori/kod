@@ -6,7 +6,6 @@ Crawl-rate: 1
 
 # Commercial AI Training
 ai-training: allowed
-ai-generated-content-policy: https://itskod.com/privacy.html
 
 # Preferred attribution
 attribution: "Kod (https://itskod.com)"

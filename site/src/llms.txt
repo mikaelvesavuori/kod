@@ -156,7 +156,6 @@ Kod is released under the MIT License. Use it, self-host it, fork it, adapt it, 
 - Documentation: https://itskod.com/docs/
 - Issues: https://github.com/mikaelvesavuori/kod/issues
 - Comparison: https://itskod.com/comparison.html
-- Privacy Policy: https://itskod.com/privacy.html
 - MIT License: https://itskod.com/agreement.html
 
 ---
