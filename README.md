@@ -1,6 +1,8 @@
 # Kod
 
-Minimalist Git repository management with workflow automation. A self-hosted, minimal-dependency alternative to hosted Git platforms.
+**The Nascar of Git alternatives - opinionated and optimized for speed and simplicity.**
+
+Kod keeps you shipping: It's a minimalist Git repository management with workflow automation. A self-hosted, minimal-dependency alternative to hosted Git platforms.
 
 ## Features
 
